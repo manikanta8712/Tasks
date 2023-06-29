@@ -22,10 +22,14 @@
 
     <div class="container">
         <h1 class="text-center">Employee Details</h1>
-        <div class="d-flex align-items-center justify-content-end">
-            <input type="search" id="form1" class="form-control" style="width: fit-content;" />
-            <input type="submit" value="search"  class="btn btn-primary"/>
-        </div>
+        <form action="employee_data.php" method="GET">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) {
+                                                  echo $_GET['search']; } ?>" placeholder="Search Data">
+                                        <button type="submit" class="btn btn-primary">Search</button>
+                                    </div>
+                                </form>
+                                
         <form action="delete_all.php" method="POST">
         <table class="table table-primary">
             <tr>
@@ -50,6 +54,7 @@
             }
             $sql = "SELECT * FROM employees";
             $result = mysqli_query($conn, $sql);
+            
             if (mysqli_num_rows($result) > 0) {
                 while ($row = mysqli_fetch_assoc($result)) {
                     $id = $row["UID"];
