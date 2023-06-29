@@ -54,7 +54,45 @@
             }
             $sql = "SELECT * FROM employees";
             $result = mysqli_query($conn, $sql);
-            
+            if (isset($_GET['search'])) {
+                $search_val = $_GET['search'];
+                $query = "SELECT * FROM employees WHERE CONCAT(UID,firstname,lastname) LIKE '%$search_val%' ";
+                $query_result = mysqli_query($conn, $query);
+            if (mysqli_num_rows($query_result) > 0) {
+                while ($row = mysqli_fetch_assoc($query_result)) {
+                    $id = $row["UID"];
+                    $fname =  $row["firstname"];
+                    $lname = $row["lastname"];
+                    $sal = $row["salary"];
+                    $img = $row["picture"];
+            ?>
+                    <tr>
+                        <td>
+                                <input class="form-check-input" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
+                        </td>
+                        <td><?php echo $id; ?></td>
+                        <td><?php echo $fname; ?></td>
+                        <td><?php echo $lname;  ?></td>
+                        <td><?php echo $sal;  ?></td>
+                        <td><?php
+                            $retrievedFileNames = explode(",", $img);
+                            foreach ($retrievedFileNames as $image) {
+                                echo '<img src="./uploads/' . $image . '" class="img">';
+                            }
+
+                            ?></td>
+                        <td>
+                            <a class="btn btn-warning" href='preview.php?previewid=<?php echo $id; ?>'>Preview</a>
+                            <a class="btn btn-primary" href='edit.php?updateid=<?php echo $id; ?>'>Edit</a>
+                            <a class="btn btn-danger" href='delete.php?deleteid=<?php echo $id; ?>'>Delete</a>
+                        </td>
+                    </tr>
+            <?php
+                }
+            }else {
+                echo "<h5>No record found</h5>";
+            }
+        }else {
             if (mysqli_num_rows($result) > 0) {
                 while ($row = mysqli_fetch_assoc($result)) {
                     $id = $row["UID"];
@@ -86,8 +124,8 @@
                     </tr>
             <?php
                 }
-            }
-
+        }
+    }
             ?>
         </table>
         </form>
