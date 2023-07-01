@@ -6,13 +6,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In</title>
-    <!-- Latest compiled and minified CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"> -->
-
+     <!-- Latest compiled and minified CSS -->
+     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script> -->
+    <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js"></script>
@@ -228,23 +225,23 @@
         $firstName = $_POST['firstName'];
         $lastName = $_POST['lastName'];
         $salary = $_POST['salary'];
-    
         $target_dir = "./uploads/";
-    
+
         // Loop through each uploaded file
         $fileNames = array();
         foreach ($_FILES['image']['name'] as $key => $name) {
-           // echo $_FILES['image']['name'];
-            $target_file = $target_dir . basename($name);
-            $fileNames[] = $name;
-    
+            $uniqueFileName = uniqid() . '_' .time(). $name; // Generate a unique file name
+            $target_file = $target_dir . basename($uniqueFileName);
+            $fileNames[] = $uniqueFileName;
+        
             if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-                echo "The file " . basename($name) . " has been uploaded.";
+                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
             }
         }
-    
+        
         // Convert array of file names to a comma-separated string
         $images = implode(',', $fileNames);
+        
     
         $getparentID = $conn->query("SELECT ID FROM user WHERE Email='$email'");
         while ($row = mysqli_fetch_assoc($getparentID)) {

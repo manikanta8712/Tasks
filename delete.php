@@ -1,27 +1,36 @@
 <?php 
-   $servername = "localhost";
-   $username = "root";
-   $password = "";
-   $dbname = "task";
-   
-   $conn = mysqli_connect($servername, $username, $password, $dbname);
-   
-   if (!$conn) {
-       die("Connection failed: " . mysqli_connect_error());
-   }
-   
+   include "connection.php";
+
    if (isset($_GET['deleteid'])) {
        $id = $_GET['deleteid'];
    
-       $sql = "DELETE FROM employees WHERE UID = '$id'";
-       $result = mysqli_query($conn, $sql);
+       // Check if the user clicked "Yes" on the confirmation box
+       if (isset($_GET['confirm']) && $_GET['confirm'] == 'yes') {
+           $sql = "DELETE FROM employees WHERE UID = '$id'";
+           $result = mysqli_query($conn, $sql);
    
-       if ($result) {
-        //    echo "Deleted successfully";
-        header("location:employee_data.php");
-       } else {
-           die("Deletion failed: " . mysqli_error($conn));
+           if ($result) {
+               // Deletion successful, redirect to employee_data.php
+               header("location: employee_data.php");
+               session_start();
+               $deletemessage = "Deleted Successfully";
+               $_SESSION['message'] = $deletemessage;
+               exit();
+           } else {
+               die("Deletion failed: " . mysqli_error($conn));
+           }
        }
+   
+       // Display the confirmation alert box
+       echo '<script>';
+       echo 'var confirmDelete = confirm("Are you sure you want to delete this employee?");';
+       echo 'if (confirmDelete) {';
+       echo '    window.location.href = "delete.php?deleteid=' . $id . '&confirm=yes";';
+       echo '} else {';
+       echo '    window.location.href = "employee_data.php";'; // Redirect if cancel is clicked
+       echo '}';
+       echo '</script>';
    }
+   
    
     ?>
