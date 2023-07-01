@@ -1,55 +1,51 @@
 <?php
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "task";
-$conn = mysqli_connect($servername, $username, $password, $dbname);
-
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-}
+include "connection.php";
 
 if (isset($_POST['submit'])) {
     $employee_id = $_POST['id'];
     $firstName = $_POST['firstName'];
     $lastName = $_POST['lastName'];
     $salary = $_POST['salary'];
-    $img = $_POST['image'];
+   // $img = $_POST['image'];
     $target_dir = "./uploads/";
     
         // Loop through each uploaded file
         $fileNames = array();
         foreach ($_FILES['image']['name'] as $key => $name) {
            // echo $_FILES['image']['name'];
-            $target_file = $target_dir . basename($name);
-            $fileNames[] = $name;
-    
-            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-                echo "The file " . basename($name) . " has been uploaded.";
-            }
+           $uniqueFileName = uniqid() . '_'.time(). $name; // Generate a unique file name
+           $target_file = $target_dir . basename($uniqueFileName);
+           $fileNames[] = $uniqueFileName;
+       
+           if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+               echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+           }
         }
     
         // Convert array of file names to a comma-separated string
         $images = implode(',', $fileNames);
         $sql_query = "SELECT picture FROM employees WHERE UID = '$employee_id'";
+        // $sql_query =  "SELECT employees.*, user.Email, user.PhoneNumber FROM employees 
+        // JOIN user ON employees.user_ID = user.ID";
         $squery = mysqli_query($conn,$sql_query);
         $rows = mysqli_fetch_array($squery);
         $image = $rows['picture'];
-        if ((empty($fileNames[0]) == " ")) {
-            $FileNames = $image;
+        if ((empty($fileNames[0]))) {
+            $fileNames = $image;
         } else {
-            $FileNames = $images;
+            $fileNames = $images;
             // echo "<script type='text/javascript'>alert($FileNames)</script>";
         }
     // $query = "SELECT * FROM employees WHERE UID = '$employee_id'";
     // $query_run = mysqli_query($conn, $query);
-        $sql = "UPDATE employees SET firstname = '$firstName', lastname = '$lastName', salary = '$salary',picture = '$FileNames'  WHERE UID = '$employee_id'";
+        $sql = "UPDATE employees SET firstname = '$firstName', lastname = '$lastName', salary = '$salary',picture = '$fileNames'  WHERE UID = '$employee_id'";
         $result = mysqli_query($conn, $sql);
-
+        session_start();
         if ($result) {
-            //echo "Updated Successfully";
             header("location:employee_data.php");
+            $success = "Updated Successfully";
+           $_SESSION['msg'] = $success;
         } else {
             die(mysqli_error($conn));
         }
@@ -75,11 +71,10 @@ if (isset($_POST['submit'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <!-- Latest compiled and minified CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
+     <!-- Latest compiled and minified CSS -->
+     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js"></script>
@@ -152,7 +147,7 @@ if (isset($_POST['submit'])) {
                                     <?php
                                     $retrievedFileNames = explode(",", $row["picture"]);
                                     foreach ($retrievedFileNames as $image) {
-                                        echo '<img src="./uploads/' . $image . '">';
+                                        echo '<img src="./uploads/' . $image . '" style="width:100px;height:100px">';
                                     }
 
                                     ?>
