@@ -9,6 +9,7 @@
     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
     <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .img {
             width: 100px !important;
@@ -17,42 +18,62 @@
 </head>
 
 <body>
-
+    <!-- modal for delete all -->
+    <div class="modal fade" id="alldeleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Employee Data Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="delete_all.php" method="POST">
+                    <div class="modal-body">
+                      <input type="hidden" name="alldelete_id" id="alldelete_id">
+                        <h6>Are you sure, do you want to delete?</h6>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary cancelbtn" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="alldeleteEm" class="btn btn-danger">Delete All</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <?php
     session_start();
     if (isset($_SESSION['msg'])) {
-        $success  =   $_SESSION['msg'];
+        $success =  $_SESSION['msg'];
         unset($_SESSION['msg']); // Clear the message to prevent it from showing again
         echo '<div class="alert alert-success alert-dismissible fade show" role="alert">' .  $success . '
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>';
     }
-if (isset($_SESSION['message'])) {
-    $deletemessage = $_SESSION['message'];
-    unset($_SESSION['message']); // Clear the message to prevent it from showing again
-    echo '<div class="alert alert-warning alert-dismissible fade show" role="alert">' . $deletemessage . '
+    if (isset($_SESSION['message'])) {
+        $deletemessage = $_SESSION['message'];
+        unset($_SESSION['message']); // Clear the message to prevent it from showing again
+        echo '<div class="alert alert-warning alert-dismissible fade show" role="alert">' . $deletemessage . '
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>';
-}
-
-     ?>
-
+    }
+    ?>
     <div class="container">
         <h1 class="text-center">Employee Details</h1>
+        <!-- search -->
         <form action="employee_data.php" method="GET">
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) { echo $_GET['search']; } ?>" placeholder="Search Data">
+                <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) {  
+                    echo $_GET['search']; } ?>" placeholder="Search Data">
                 <button type="submit" class="btn btn-primary">Search</button>
                 <button type="button" class="btn btn-danger mx-2" onclick="window.location.href = 'employee_data.php';">Cancel</button>
             </div>
         </form>
-
-        <form id="confirmForm" action="delete_all.php" method="POST">
-        <input type="hidden" name="confirm" value="yes">
+        <!-- delete all -->
+        <!-- <form id="confirmForm" action="delete_all.php" method="POST">
+            <input type="hidden" name="confirm" value="yes"> -->
             <table class="table table-primary">
                 <tr>
                     <th>
-                        <button type="submit" name="del_multiple_data" class="btn btn-danger">Delete</button>
+                        <button type="submit" name="del_multiple_data" class="btn btn-danger all_Delete">Delete</button>
                     </th>
                     <th>ID</th>
                     <th>First Name</th>
@@ -65,6 +86,7 @@ if (isset($_SESSION['message'])) {
                     <th>Actions</th>
                 </tr>
                 <?php
+                // database connection
                 include "connection.php";
                 //$sql = "SELECT * FROM employees";
                 $sql = "SELECT employees.*, user.Email, user.PhoneNumber FROM employees 
@@ -86,7 +108,7 @@ if (isset($_SESSION['message'])) {
                 ?>
                             <tr>
                                 <td>
-                                    <input class="form-check-input" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
+                                    <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
                                 </td>
                                 <td><?php echo $id; ?></td>
                                 <td><?php echo $fname; ?></td>
@@ -101,9 +123,8 @@ if (isset($_SESSION['message'])) {
                                 <td><?php echo $row["Email"]; ?></td>
                                 <td><?php echo $row["PhoneNumber"]; ?></td>
                                 <td>
-
-                                    <a class="btn btn-warning" href='preview.php?previewid=<?php echo $id; ?>'>Preview</a>
-                                    <a class="btn btn-primary" href='edit.php?updateid=<?php echo $id; ?>'>Edit</a>
+                                    <a class="btn btn-warning" href='preview.php?previewid=<?php echo $row["user_ID"]; ?>'>Preview</a>
+                                    <a class="btn btn-primary" href='edit.php?updateid=<?php echo $row["user_ID"]; ?>'>Edit</a>
                                     <a class="btn btn-danger" href='delete.php?deleteid=<?php echo $id; ?>'>Delete</a>
                                 </td>
                             </tr>
@@ -123,7 +144,7 @@ if (isset($_SESSION['message'])) {
                         ?>
                             <tr>
                                 <td>
-                                    <input class="form-check-input" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
+                                    <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
                                 </td>
                                 <td><?php echo $id; ?></td>
                                 <td><?php echo $fname; ?></td>
@@ -131,12 +152,10 @@ if (isset($_SESSION['message'])) {
                                 <td><?php echo $sal;  ?></td>
                                 <td><?php
                                     $retrievedFileNames = explode(",", $img);
-                                    foreach ($retrievedFileNames as $image) {
-                                        echo '<img src="./uploads/' . $image . '" class="img">';
-                                    }
-
+                                    //foreach ($retrievedFileNames as $image) {
+                                        echo '<img src="./uploads/' . $retrievedFileNames[0] . '" class="img">';
+                                   // }
                                     ?></td>
-                                <!-- <th><?php echo $row["Name"]; ?></th> -->
                                 <td><?php echo $row["Email"]; ?></td>
                                 <td><?php echo $row["PhoneNumber"]; ?></td>
                                 <td>
@@ -151,8 +170,27 @@ if (isset($_SESSION['message'])) {
                 }
                 ?>
             </table>
-        </form>
+        <!-- </form> -->
     </div>
+    <script>
+        // modal for delete all
+    $(document).ready(function() {
+$('.all_Delete').click(function(e) {
+            e.preventDefault();
+            var emp_ids = [];
+            $(this).closest('table').find('.checkall:checked').each(function() {
+            var emp_id = $(this).val();
+            emp_ids.push(emp_id);
+            });
+            //console.log(emp_ids);
+            $('#alldelete_id').val(emp_ids.join(', '));
+            $('#alldeleteModal').modal('show');
+        });
+        $('.cancelbtn').click(function(e) {
+            e.preventDefault();
+            location.reload();
+        });
+    });
+</script>
 </body>
-
 </html>

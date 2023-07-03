@@ -1,26 +1,22 @@
 <?php
-
+// database connection
 include "connection.php";
 if (isset($_GET['previewid'])) {
-  echo  $employee_id = $_GET['previewid'];
+     $employee_id = $_GET['previewid'];
     //$query = "SELECT * FROM employees WHERE UID ='$employee_id'";
     $query = "SELECT employees.*, user.Email, user.PhoneNumber FROM employees 
     JOIN user ON employees.user_ID = user.ID WHERE employees.user_ID = '$employee_id'";
     $query_run = mysqli_query($conn, $query);
     if (mysqli_num_rows($query_run) > 0) {
-
         $row = mysqli_fetch_assoc($query_run);
     } else {
-
         echo "No such id found";
     }
 }
 //mysqli_close($conn);
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,21 +38,18 @@ if (isset($_GET['previewid'])) {
             border-radius: 13px 13px 0px 0px;
             color: white;
         }
-
         .btn-block {
             display: block;
             width: auto;
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
-
         .btn-block:hover {
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
     </style>
 </head>
-
 <body>
     <section class="">
         <div class="container py-5 h-100">
@@ -76,12 +69,12 @@ if (isset($_GET['previewid'])) {
                                     <input type="text" id="typePasswordX-2" name="lastName" class="form-control form-control-lg" placeholder="Enter Your lastName" value='<?php echo $row["lastname"];  ?>' />
                                 </div>
                                 <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="lastName">salary</label>
+                                    <label class="form-label d-flex" for="salary">salary</label>
                                     <input type="text" id="salary" name="salary" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["salary"];  ?>' />
                                 </div>
                                 <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="lastName">Email</label>
-                                    <input type="text" id="salary" name="Email" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["Email"];  ?>' />
+                                    <label class="form-label d-flex" for="email">Email</label>
+                                    <input type="text" id="email" name="Email" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["Email"];  ?>' />
                                 </div>
                                 <div class="form-outline mb-4">
                                     <label class="form-label d-flex" for="lastName">Phone Number</label>

@@ -1,14 +1,12 @@
 <?php 
+// database connection
    include "connection.php";
-
    if (isset($_GET['deleteid'])) {
        $id = $_GET['deleteid'];
-   
        // Check if the user clicked "Yes" on the confirmation box
        if (isset($_GET['confirm']) && $_GET['confirm'] == 'yes') {
            $sql = "DELETE FROM employees WHERE UID = '$id'";
            $result = mysqli_query($conn, $sql);
-   
            if ($result) {
                // Deletion successful, redirect to employee_data.php
                header("location: employee_data.php");
@@ -20,7 +18,6 @@
                die("Deletion failed: " . mysqli_error($conn));
            }
        }
-   
        // Display the confirmation alert box
        echo '<script>';
        echo 'var confirmDelete = confirm("Are you sure you want to delete this employee?");';
@@ -31,6 +28,4 @@
        echo '}';
        echo '</script>';
    }
-   
-   
     ?>
