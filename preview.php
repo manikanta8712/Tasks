@@ -2,9 +2,9 @@
 // database connection
 include "connection.php";
 if (isset($_GET['previewid'])) {
-     $employee_id = $_GET['previewid'];
+    $employee_id = $_GET['previewid'];
     //$query = "SELECT * FROM employees WHERE UID ='$employee_id'";
-    $query = "SELECT employees.*, user.Email, user.PhoneNumber FROM employees 
+    $query = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber FROM employees 
     JOIN user ON employees.user_ID = user.ID WHERE employees.user_ID = '$employee_id'";
     $query_run = mysqli_query($conn, $query);
     if (mysqli_num_rows($query_run) > 0) {
@@ -13,7 +13,6 @@ if (isset($_GET['previewid'])) {
         echo "No such id found";
     }
 }
-//mysqli_close($conn);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,12 +20,10 @@ if (isset($_GET['previewid'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-     <!-- Latest compiled and minified CSS -->
-     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
+    <!-- Latest compiled and minified CSS -->
+    <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
     <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
-    <!-- Jquery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .text_change {
             display: flex;
@@ -57,31 +54,34 @@ if (isset($_GET['previewid'])) {
                 <div class="col-12 col-md-8 col-lg-6 col-xl-5">
                     <div class="card shadow-2-strong" style="border-radius: 1rem;">
                         <h3 class="text_change"> Details</h3>
-                        <div class="card-body p-5 text-center">
+                        <div class="card-body p-5">
                             <form id="myForm" action="employee_data.php" method="POST" enctype="multipart/form-data">
-                                <!-- <input type="hidden" name="id" value='<//?php echo $row["UID"]; ?>'> -->
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="firstName">firstName</label>
-                                    <input type="text" name="firstName" id="firstName" class="form-control form-control-lg" placeholder="Enter Your firstName" value='<?php echo $row["firstname"]; ?>' />
+                                <div class="mb-2">
+                                <span class="font-weight-bold text-uppercase" style="font-weight: 700;">FirstName:</span>
+                                    <span class=""><?php echo $row["firstname"]; ?></span>
                                 </div>
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="lastName">lastName</label>
-                                    <input type="text" id="typePasswordX-2" name="lastName" class="form-control form-control-lg" placeholder="Enter Your lastName" value='<?php echo $row["lastname"];  ?>' />
+                                <div class="mb-2">
+                                    <span class=" text-uppercase"  style="font-weight: 700;">LastName:</span>
+                                    <span class=""><?php echo $row["lastname"]; ?></span>
                                 </div>
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="salary">salary</label>
-                                    <input type="text" id="salary" name="salary" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["salary"];  ?>' />
+                                <div class="mb-2">
+                                    <span class="form-label text-uppercase"  style="font-weight: 700;">salary:</span>
+                                    <span class=""><?php echo $row["salary"]; ?></span>
                                 </div>
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="email">Email</label>
-                                    <input type="text" id="email" name="Email" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["Email"];  ?>' />
+                                <div class="mb-2">
+                                    <span class="text-uppercase"  style="font-weight: 700;">username:</span>
+                                    <span class=""><?php echo $row["Name"]; ?></span>
                                 </div>
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="lastName">Phone Number</label>
-                                    <input type="text" id="salary" name="number" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["PhoneNumber"];  ?>' />
+                                <div class="mb-2">
+                                    <span class="text-uppercase"  style="font-weight: 700;">Email:</span>
+                                    <span class=""><?php echo $row["Email"]; ?></span>
                                 </div>
-                                <div class="form-outline mb-4">
-                                    <label class="form-label d-flex" for="lastName">Image</label>
+                                <div class="mb-2">
+                                    <span class="form-label text-uppercase"  style="font-weight: 700;">Phone Number:</span>
+                                    <span class=""><?php echo $row["PhoneNumber"]; ?></span>
+                                </div>
+                                <div class="form-outline">
+                                    <p class="form-label d-flex"  style="font-weight: 700;">Image</p>
                                     <?php
                                     $retrievedFileNames = explode(",", $row["picture"]);
                                     foreach ($retrievedFileNames as $image) {
@@ -100,5 +100,5 @@ if (isset($_GET['previewid'])) {
             </div>
         </div>
     </section>
-
 </body>
+</html>
