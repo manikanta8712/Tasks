@@ -4,18 +4,41 @@ include "connection.php";
 if (isset($_GET['previewid'])) {
     $employee_id = $_GET['previewid'];
     //$query = "SELECT * FROM employees WHERE UID ='$employee_id'";
-    $query = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber FROM employees 
-    JOIN user ON employees.user_ID = user.ID WHERE employees.user_ID = '$employee_id'";
+    $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
+    FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID WHERE employees.user_ID = '$employee_id'";
     $query_run = mysqli_query($conn, $query);
     if (mysqli_num_rows($query_run) > 0) {
-        $row = mysqli_fetch_assoc($query_run);
+        $employeeData = array(); // Initialize the $employeeData array
+        while ($row = mysqli_fetch_assoc($query_run)) {
+            $employeeId = $row['user_ID'];
+            if (!isset($employeeData[$employeeId])) {
+                // Initialize the employee data
+                $employeeData[$employeeId] = array(
+                    'UID' => $row['user_ID'],
+                    'Name' => $row['Name'],
+                    'Firstname' => $row['firstname'],
+                    'Lastname' => $row['lastname'],
+                    'Salary' => $row['salary'],
+                    'Email' => $row['Email'],
+                    'PhoneNumber' => $row['PhoneNumber'],
+                    'Images' => array() // Array to store images
+                );
+            }
+            // Add the image to the employee's images array
+            $employeeData[$employeeId]['Images'][] = $row['image'];
+        }
+        $a = 0;
+        foreach ($employeeData as $employee) {
+            $a = $a + 1;      }
     } else {
         echo "No such id found";
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,18 +58,21 @@ if (isset($_GET['previewid'])) {
             border-radius: 13px 13px 0px 0px;
             color: white;
         }
+
         .btn-block {
             display: block;
             width: auto;
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
+
         .btn-block:hover {
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
     </style>
 </head>
+
 <body>
     <section class="">
         <div class="container py-5 h-100">
@@ -57,37 +83,39 @@ if (isset($_GET['previewid'])) {
                         <div class="card-body p-5">
                             <form id="myForm" action="employee_data.php" method="POST" enctype="multipart/form-data">
                                 <div class="mb-2">
-                                <span class="font-weight-bold text-uppercase" style="font-weight: 700;">FirstName:</span>
-                                    <span class=""><?php echo $row["firstname"]; ?></span>
+                                    <span class="font-weight-bold text-uppercase" style="font-weight: 700;">FirstName:</span>
+                                    <span class=""><?= $employee['Firstname']; ?></span>
                                 </div>
                                 <div class="mb-2">
-                                    <span class=" text-uppercase"  style="font-weight: 700;">LastName:</span>
-                                    <span class=""><?php echo $row["lastname"]; ?></span>
+                                    <span class=" text-uppercase" style="font-weight: 700;">LastName:</span>
+                                    <span class=""><?= $employee['Lastname']; ?></span>
                                 </div>
                                 <div class="mb-2">
-                                    <span class="form-label text-uppercase"  style="font-weight: 700;">salary:</span>
-                                    <span class=""><?php echo $row["salary"]; ?></span>
+                                    <span class="form-label text-uppercase" style="font-weight: 700;">salary:</span>
+                                    <span class=""><?= $employee['Salary']; ?></span>
                                 </div>
                                 <div class="mb-2">
-                                    <span class="text-uppercase"  style="font-weight: 700;">username:</span>
-                                    <span class=""><?php echo $row["Name"]; ?></span>
+                                    <span class="text-uppercase" style="font-weight: 700;">username:</span>
+                                    <span class=""><?= $employee['Name']; ?></span>
                                 </div>
                                 <div class="mb-2">
-                                    <span class="text-uppercase"  style="font-weight: 700;">Email:</span>
-                                    <span class=""><?php echo $row["Email"]; ?></span>
+                                    <span class="text-uppercase" style="font-weight: 700;">Email:</span>
+                                    <span class=""><?= $employee['Email']; ?></span>
                                 </div>
                                 <div class="mb-2">
-                                    <span class="form-label text-uppercase"  style="font-weight: 700;">Phone Number:</span>
-                                    <span class=""><?php echo $row["PhoneNumber"]; ?></span>
+                                    <span class="form-label text-uppercase" style="font-weight: 700;">Phone Number:</span>
+                                    <span class=""><?= $employee['PhoneNumber']; ?></span>
                                 </div>
                                 <div class="form-outline">
-                                    <p class="form-label d-flex"  style="font-weight: 700;">Image</p>
+                                    <p class="form-label d-flex" style="font-weight: 700;">Image</p>
                                     <?php
-                                    $retrievedFileNames = explode(",", $row["picture"]);
-                                    foreach ($retrievedFileNames as $image) {
-                                        echo '<img src="./uploads/' . $image . '" style="width:100px;height:100px">';
+                                    $employeeImages = $employee['Images'];
+                                    foreach ($employeeImages as $image) {
+                                        $imagePath = explode(",", $image);
+                                        echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img" style="width:100px";>';
                                     }
                                     ?>
+
                                     <p>Accept jpeg,jpg,png,gif</p>
                                 </div>
                                 <div class="d-flex justify-content-center">
@@ -101,4 +129,5 @@ if (isset($_GET['previewid'])) {
         </div>
     </section>
 </body>
+
 </html>

@@ -30,7 +30,10 @@
 //    }
 if (isset($_POST['deleteEm'])) {
     $employee_id = $_POST['delete_id'];
-    $query = "DELETE FROM employees WHERE UID='$employee_id' ";
+    $query = "DELETE employees, employee_images
+    FROM employees
+    LEFT JOIN employee_images ON employees.user_ID = employee_images.user_ID
+    WHERE employees.user_ID = '$employee_id'";
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
         header("Location: employee_data.php");

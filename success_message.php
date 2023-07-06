@@ -6,8 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In</title>
-     <!-- Latest compiled and minified CSS -->
-     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
+    <!-- Latest compiled and minified CSS -->
+    <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
     <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
 
@@ -188,7 +188,7 @@
     //     echo "Error creating table: " . $conn->error;
     // }
 
-        // single file upload
+    // single file upload
 
     // if (isset($_POST['firstName']) && isset($_POST['lastName']) && isset($_POST['salary']) && isset($_FILES['image']['name'])) {
     //     $firstName = $_POST['firstName'];
@@ -225,41 +225,67 @@
         $firstName = $_POST['firstName'];
         $lastName = $_POST['lastName'];
         $salary = $_POST['salary'];
-        $target_dir = "./uploads/";
-
-        // Loop through each uploaded file
-        $fileNames = array();
-        foreach ($_FILES['image']['name'] as $key => $name) {
-            $uniqueFileName = uniqid() . '_' .time(). $name; // Generate a unique file name
-            $target_file = $target_dir . basename($uniqueFileName);
-            $fileNames[] = $uniqueFileName;
-        
-            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
-            }
-        }
-        
-        // Convert array of file names to a comma-separated string
-        $images = implode(',', $fileNames);
-        
-    
-        $getparentID = $conn->query("SELECT ID FROM user WHERE Email='$email'");
+        $profilepics = $_FILES['image']['name'];
+        $getparentID = $conn->query("SELECT ID FROM user where Email='$email'");
         while ($row = mysqli_fetch_assoc($getparentID)) {
             $value1 = $row['ID'];
+            $_SESSION['id'] = $row['ID'];
         }
-    
-        $data = "INSERT INTO employees (firstname, lastname, salary, picture, user_ID)
-                 VALUES ('$firstName', '$lastName', '$salary', '$images', '$value1')";
-    
-        if ($conn->query($data) === TRUE) {
-            echo "New record created successfully";
-        } else {
-            echo "Error: " . $data . "<br>" . $conn->error;
+        // Loop through each uploaded file
+        
+        foreach ($_FILES['image']['name'] as $key => $name) {
+            $fileNames = array();
+            $target_dir = "./uploads/";
+            // echo $target_dir;
+            // exit;
+            $uniqueFileName = uniqid() . '_' .time(). $name; // Generate a unique file name
+            $target_file = $target_dir.basename($uniqueFileName);
+            // echo $target_file;
+            // exit;
+            $fileNames[] = $uniqueFileName;
+            // $target_dir = "uploads/";
+            //$target_file = $target_dir . $newFileName;
+            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+                 // Convert array of file names to a comma-separated string
+        $images = implode(',', $fileNames);
+                // Start the transaction for each file
+                mysqli_begin_transaction($conn);
+                try {
+                    // Update the employeeImage table
+                    $username = $_SESSION['name'];
+                    $userData = "INSERT INTO employee_images (username,image, user_ID) " .
+                        "VALUES ('$username',' $images', '$value1')";
+                    mysqli_query($conn, $userData);
+                    mysqli_commit($conn);
+                } catch (Exception $e) {
+                    // Rollback the transaction on error
+                    mysqli_rollback($conn);
+                    echo "Error updating data: " . $e->getMessage();
+                }
+            } else {
+                echo "";
+            }
         }
+        // Start the transaction for the employee table
+        mysqli_begin_transaction($conn);
+        try {
+            // insert the employee table
+            $data = "INSERT INTO employees (firstname, lastname, salary, user_ID) " .
+                "VALUES ('$firstName', '$lastName', $salary, '$value1')";
+            mysqli_query($conn, $data);
+            mysqli_commit($conn);
+           // $_SESSION['status'] = 'Data Inserted Successfully';
+            // header('Location: employee_data.php');
+        } catch (Exception $e) {
+            // Rollback the transaction on error
+            mysqli_rollback($conn);
+            echo "Error updating data: " . $e->getMessage();
+        }
+        // Close the database connection
+    mysqli_close($conn);
     }
     
-
-    $conn->close();
     ?>
     <script>
         $.validator.addMethod("extension", function(value, element, param) {

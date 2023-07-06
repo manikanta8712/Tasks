@@ -20,20 +20,36 @@ include "connection.php";
 // }
 // }
 // delete all
+// if (isset($_POST['alldeleteEm'])) {
+//   $All_id = $_POST['alldelete_id'];
+//   //$idList = implode(',', $All_id); // Convert array of IDs to a comma-separated string
+//   $query = "DELETE FROM employees WHERE UID IN ($All_id)";
+//   $query_run = mysqli_query($conn, $query);
+//   if ($query_run) {
+//     session_start();
+//                $deletemessage = "Deleted Successfully";
+//                $_SESSION['message'] = $deletemessage;
+//       //echo "<script type='text/javascript'>alert('Record Deleted Successfully')</script>";
+//       header("Location: employee_data.php");
+//   } else {
+//       echo "Error: " . mysqli_error($conn);
+//   }
+// }
 if (isset($_POST['alldeleteEm'])) {
   $All_id = $_POST['alldelete_id'];
-  //$idList = implode(',', $All_id); // Convert array of IDs to a comma-separated string
-  $query = "DELETE FROM employees WHERE UID IN ($All_id)";
+  // Convert the array of IDs into a comma-separated string
+  //$id_list = implode(',', $All_id);
+
+  // Delete from the employeeImage table first
+  $query_image = "DELETE FROM employee_images WHERE user_ID IN ($All_id)";
+  $query_image_run = mysqli_query($conn, $query_image);
+  // Then, delete from the employee table
+  $query = "DELETE FROM employees WHERE user_ID IN ($All_id)";
   $query_run = mysqli_query($conn, $query);
-  if ($query_run) {
-    session_start();
-               $deletemessage = "Deleted Successfully";
-               $_SESSION['message'] = $deletemessage;
+  if ($query_run && $query_image_run) {
       //echo "<script type='text/javascript'>alert('Record Deleted Successfully')</script>";
+      $_SESSION['alldelete'] = 'Data Deleted Successfully';
       header("Location: employee_data.php");
-  } else {
-      echo "Error: " . mysqli_error($conn);
   }
 }
-
 ?>

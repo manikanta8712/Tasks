@@ -1,5 +1,28 @@
-<!DOCTYPE html>
+<?php 
+session_start();
+// Check if user is logged in
+include "connection.php";
+    if(!empty($_SESSION['name'])){
+        $username = $_SESSION['name'];
+    }
+    $query_sql = "SELECT admin FROM user WHERE Name = '$username'";
+    $result = $conn->query($query_sql);
+    $row = $result->fetch_assoc();
+    $admin = $row["admin"];
+    //echo $admin;
+    // echo $username;
+    // if (empty($_SESSION['name'])) {
+    //     header('location:Login.php');
+    //     exit();
+    // }
+// Check if user is an admin
+if ($admin==1) {
+    // Redirect to a different page or display an error message
+    // header('Location:employee_data.php');
+    ?>
+    <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +38,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- modal for delete all -->
     <div class="modal fade" id="alldeleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -59,7 +83,6 @@
         </div>
     </div>
     <?php
-    session_start();
     if (isset($_SESSION['msg'])) {
         $success =  $_SESSION['msg'];
         unset($_SESSION['msg']); // Clear the message to prevent it from showing again
@@ -80,7 +103,9 @@
         <!-- search -->
         <form action="employee_data.php" method="GET">
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) { echo $_GET['search']; } ?>" placeholder="Search Data">
+                <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) {
+                                                                                    echo $_GET['search'];
+                                                                                } ?>" placeholder="Search Data">
                 <button type="submit" class="btn btn-primary">Search</button>
                 <button type="button" class="btn btn-danger mx-2" onclick="window.location.href = 'employee_data.php';">Cancel</button>
             </div>
@@ -107,44 +132,68 @@
             // database connection
             include "connection.php";
             //$sql = "SELECT * FROM employees";
-            $sql = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber FROM employees 
-        JOIN user ON employees.user_ID = user.ID";
+            //     $sql = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber FROM employees 
+            // JOIN user ON employees.user_ID = user.ID";
+            $sql = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
+        FROM employees  INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID";
             $result = mysqli_query($conn, $sql);
             if (isset($_GET['search'])) {
                 $search_val = $_GET['search'];
                 // $query = "SELECT employees.*, user.Email, user.PhoneNumber FROM employees 
                 // JOIN user ON employees.user_ID = user.ID WHERE CONCAT(UID,firstname,lastname) LIKE '%$search_val%' ";
-                $query = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber  FROM employees JOIN user ON employees.user_ID = user.ID  WHERE CONCAT(UID, firstname,lastname) LIKE '%$search_val%'  OR user.Email LIKE '%$search_val%' OR user.PhoneNumber LIKE '%$search_val%' OR user.Name LIKE '%$search_val%'";
+                $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image
+                FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID WHERE CONCAT(employees.UID, employees.firstname, employees.lastname, user.Email, user.PhoneNumber, user.Name, employee_images.image) LIKE '%$search_val%'";
                 $query_result = mysqli_query($conn, $query);
+                $employeeData = array(); // Array to store employee data
                 if (mysqli_num_rows($query_result) > 0) {
-                    while ($row = mysqli_fetch_assoc($query_result)) {
-                        $id = $row["UID"];
-                        $fname =  $row["firstname"];
-                        $lname = $row["lastname"];
-                        $sal = $row["salary"];
-                        $img = $row["picture"];
-            ?>
+                    foreach ($query_result as $row) {
+                        //print_r($row);
+                        $employeeId = $row['UID'];
+                        //echo $employeeId;
+                        if (!isset($employeeData[$employeeId])) {
+                            // Initialize the employee data
+                            $employeeData[$employeeId] = array(
+                                'UID' => $row['UID'],
+                                'Name' => $row['Name'],
+                                'Firstname' => $row['firstname'],
+                                'Lastname' => $row['lastname'],
+                                'Salary' => $row['salary'],
+                                'Email' => $row['Email'],
+                                'PhoneNumber' => $row['PhoneNumber'],
+                                'Images' => array() // Array to store images
+                            );
+                        }
+                        // Add the image to the employee's images array
+                        $employeeData[$employeeId]['Images'][] = $row['image'];
+                    }
+                    $a = 0;
+                    foreach ($employeeData as $employee) {
+                        $a = $a + 1;
+                        //echo $a;
+                    ?>
                         <tr>
                             <td>
-                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
+                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?= $employee['user_ID']; ?>">
                             </td>
-                            <td><?php echo $id; ?></td>
-                            <td><?php echo $fname; ?></td>
-                            <td><?php echo $lname;  ?></td>
-                            <td><?php echo $sal;  ?></td>
-                            <td><?php echo $row["Name"]; ?></td>
-                            <td><?php echo $row["Email"]; ?></td>
-                            <td><?php echo $row["PhoneNumber"]; ?></td>
-                            <td><?php
-                                $retrievedFileNames = explode(",", $img);
-                                foreach ($retrievedFileNames as $image) {
-                                    echo '<img src="./uploads/' . $image . '" class="img">';
-                                }
-                                ?></td>
+                            <td class="empid"><?= $employee['UID']; ?></td>
+                            <td><?= $employee['Firstname']; ?></td>
+                            <td><?= $employee['Lastname']; ?></td>
+                            <td><?= $employee['Salary']; ?></td>
+                            <td><?= $employee['Name']; ?></td>
+                            <td><?= $employee['Email']; ?></td>
+                            <td><?= $employee['PhoneNumber']; ?></td>
                             <td>
-                                <a class="btn btn-warning" href='preview.php?previewid=<?php echo $row["user_ID"]; ?>'>Preview</a>
-                                <a class="btn btn-primary" href='edit.php?updateid=<?php echo $row["user_ID"]; ?>'>Edit</a>
-                                <a class="btn btn-danger delete" href='delete.php?deleteid=<?php echo $id; ?>'>Delete</a>
+                                <?php
+                                $lastImageIndex = count($employee['Images']) - 1;
+                                $imagePath = explode(",", $employee['Images'][$lastImageIndex]);
+                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img">';
+                                ?>
+                            </td>
+
+                            <td>
+                            <a class="btn btn-warning" href='preview.php?previewid=<?= $employee['user_ID']; ?>'>Preview</a>
+                                <a class="btn btn-primary" href='edit.php?updateid=<?= $employee['user_ID']; ?>'>Edit</a>
+                                <a class="btn btn-danger delete" href='delete.php?deleteid=<?= $employee['user_ID']; ?>'>Delete</a>
                             </td>
                         </tr>
                     <?php
@@ -153,35 +202,58 @@
                     echo "<h5>No record found</h5>";
                 }
             } else {
+                $employeeData = array(); // Array to store employee data
                 if (mysqli_num_rows($result) > 0) {
-                    while ($row = mysqli_fetch_assoc($result)) {
-                        $id = $row["UID"];
-                        $fname =  $row["firstname"];
-                        $lname = $row["lastname"];
-                        $sal = $row["salary"];
-                        $img = $row["picture"];
+
+                    foreach ($result as $row) {
+                        //print_r($row);
+                        $employeeId = $row['UID'];
+                        //echo $employeeId;
+                        if (!isset($employeeData[$employeeId])) {
+                            // Initialize the employee data
+                            $employeeData[$employeeId] = array(
+                                'UID' => $row['UID'],
+                                'user_ID'=>$row['user_ID'],
+                                'Name' => $row['Name'],
+                                'Firstname' => $row['firstname'],
+                                'Lastname' => $row['lastname'],
+                                'Salary' => $row['salary'],
+                                'Email' => $row['Email'],
+                                'PhoneNumber' => $row['PhoneNumber'],
+                                'Images' => array() // Array to store images
+                            );
+                        }
+                        // Add the image to the employee's images array
+                        $employeeData[$employeeId]['Images'][] = $row['image'];
+                    }
+                    $a = 0;
+                    foreach ($employeeData as $employee) {
+                        $a = $a + 1;
+                        //echo $a;
                     ?>
                         <tr>
                             <td>
-                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?php echo $id; ?>">
+                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?= $employee['user_ID']; ?>">
                             </td>
-                            <td class="empid"><?php echo $id; ?></td>
-                            <td><?php echo $fname; ?></td>
-                            <td><?php echo $lname;  ?></td>
-                            <td><?php echo $sal;  ?></td>
-                            <td><?php echo $row["Name"]; ?></td>
-                            <td><?php echo $row["Email"]; ?></td>
-                            <td><?php echo $row["PhoneNumber"]; ?></td>
-                            <td><?php
-                                $retrievedFileNames = explode(",", $img);
-                                //foreach ($retrievedFileNames as $image) {
-                                echo '<img src="./uploads/' . $retrievedFileNames[0] . '" class="img">';
-                                // }
-                                ?></td>
+                            <td class="empid"><?= $employee['UID']; ?></td>
+                            <td><?= $employee['Firstname']; ?></td>
+                            <td><?= $employee['Lastname']; ?></td>
+                            <td><?= $employee['Salary']; ?></td>
+                            <td><?= $employee['Name']; ?></td>
+                            <td><?= $employee['Email']; ?></td>
+                            <td><?= $employee['PhoneNumber']; ?></td>
                             <td>
-                                <a class="btn btn-warning" href='preview.php?previewid=<?php echo $row["user_ID"]; ?>'>Preview</a>
-                                <a class="btn btn-primary" href='edit.php?updateid=<?php echo $row["user_ID"]; ?>'>Edit</a>
-                                <a class="btn btn-danger delete" href='delete.php?deleteid=<?php echo $id; ?>'>Delete</a>
+                                <?php
+                                $lastImageIndex = count($employee['Images']) - 1;
+                                $imagePath = explode(",", $employee['Images'][$lastImageIndex]);
+                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img">';
+                                ?>
+                            </td>
+
+                            <td>
+                                <a class="btn btn-warning" href='preview.php?previewid=<?=$employee['user_ID']; ?>'>Preview</a>
+                                <a class="btn btn-primary" href='edit.php?updateid=<?=$employee['user_ID']; ?>'>Edit</a>
+                                <a class="btn btn-danger delete" href='delete.php?deleteid=<?=$employee['user_ID']; ?>'>Delete</a>
                             </td>
                         </tr>
             <?php
@@ -221,4 +293,12 @@
         });
     </script>
 </body>
+
 </html>
+    <?php 
+
+}
+else {
+    echo "you don't have access";
+}
+?>

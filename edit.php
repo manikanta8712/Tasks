@@ -3,54 +3,61 @@
 include "connection.php";
 if (isset($_POST['submit'])) {
     $employee_id = $_POST['id'];
-$firstName = $_POST['firstName'];
-$lastName = $_POST['lastName'];
-$salary = $_POST['salary'];
-$phoneNumber = $_POST['number'];
-$target_dir = "./uploads/";
-// Check if new images were uploaded
-if (!empty($_FILES['image']['name'][0])) {
-    // Loop through each uploaded file
-    $fileNames = array();
-    foreach ($_FILES['image']['name'] as $key => $name) {
-        $uniqueFileName = uniqid() . '_' . time() . $name; // Generate a unique file name
-        $target_file = $target_dir . basename($uniqueFileName);
-        $fileNames[] = $uniqueFileName;
-        if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-            echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+    $vall = $_GET['val'];
+    //echo $_vall;
+    $firstName = $_POST['firstName'];
+   //echo $firstName;
+    $lastName = $_POST['lastName'];
+    $salary = $_POST['salary'];
+    $phoneNumber = $_POST['number'];
+    $target_dir = "./uploads/";
+    // Check if new images were uploaded
+    if (!empty($_FILES['image']['name'][0])) {
+        // Loop through each uploaded file
+        $fileNames = array();
+        foreach ($_FILES['image']['name'] as $key => $name) {
+            $uniqueFileName = uniqid() . '_' . time() . $name; // Generate a unique file name
+            $target_file = $target_dir . basename($uniqueFileName);
+            $fileNames[] = $uniqueFileName;
+            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+            }
         }
+        // Convert array of file names to a comma-separated string
+        $images = implode(',', $fileNames);
+        $image = $images;
+    } else {
+         $sql_query = "SELECT image FROM employee_images WHERE user_ID='$vall'";
+        //echo $employee_id;
+         $squery = mysqli_query($conn, $sql_query);
+         $rows = mysqli_fetch_assoc($squery);
+        $image = $rows['image'];
     }
-    // Convert array of file names to a comma-separated string
-    $images = implode(',', $fileNames);
-    $image = $images;
-} else {
-    $sql_query = "SELECT picture FROM employees WHERE user_ID = '$employee_id'";
-    $squery = mysqli_query($conn, $sql_query);
-    $rows = mysqli_fetch_array($squery);
-    $image = $rows['picture'];
-}
-// update details
-$sql = "UPDATE employees
+    // update details
+    $sql = "UPDATE employees
     JOIN user ON employees.user_ID = user.ID
+    JOIN employee_images ON employees.user_ID = employee_images.user_ID
     SET employees.firstname = '$firstName',
         employees.lastname = '$lastName',
         employees.salary = '$salary',
-        employees.picture = '$image',
-        user.PhoneNumber = '$phoneNumber'
-    WHERE employees.user_ID = '$employee_id'";
-$result = mysqli_query($conn, $sql);
-session_start();
-if ($result) {
-    header("location:employee_data.php");
-    $success = "Updated Successfully";
-    $_SESSION['msg'] = $success;
-} else {
-    die(mysqli_error($conn));
-}
+        user.PhoneNumber = '$phoneNumber',
+        employee_images.image = '$image'
+    WHERE employees.user_ID = '$vall'";
+    $result = mysqli_query($conn, $sql);
+    session_start();
+    if ($result) {
+    //echo $sql;
+        header("location:employee_data.php");
+        $success = "Updated Successfully";
+        $_SESSION['msg'] = $success;
+    } else {
+        die(mysqli_error($conn));
+    }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,18 +81,21 @@ if ($result) {
             border-radius: 13px 13px 0px 0px;
             color: white;
         }
+
         .btn-block {
             display: block;
             width: auto;
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
+
         .btn-block:hover {
             background: rgb(65, 202, 192);
             border-color: rgb(65, 202, 192);
         }
     </style>
 </head>
+
 <body>
     <section class="">
         <div class="container py-5 h-100">
@@ -98,44 +108,67 @@ if ($result) {
                             if (isset($_GET['updateid'])) {
                                 $employee_id = $_GET['updateid'];
                                 // $query = "SELECT * FROM employees WHERE UID='$employee_id' ";
-                                $query1 = "SELECT employees.*, user.Email,user.Name, user.PhoneNumber FROM employees 
-                                JOIN user ON employees.user_ID = user.ID WHERE employees.user_ID = '$employee_id'";
-                                $query_run = mysqli_query($conn, $query1);
+                                $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
+                                FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID WHERE employees.user_ID = '$employee_id'";
+                                $query_run = mysqli_query($conn, $query);
                                 if (mysqli_num_rows($query_run) > 0) {
-                                    $row = mysqli_fetch_array($query_run);
+                                    $employeeData = array(); // Initialize the $employeeData array
+                                    while ($row = mysqli_fetch_assoc($query_run)) {
+                                        $employeeId = $row['user_ID'];
+                                        if (!isset($employeeData[$employeeId])) {
+                                            // Initialize the employee data
+                                            $employeeData[$employeeId] = array(
+                                                'UID' => $row['user_ID'],
+                                                'Name' => $row['Name'],
+                                                'Firstname' => $row['firstname'],
+                                                'Lastname' => $row['lastname'],
+                                                'Salary' => $row['salary'],
+                                                'Email' => $row['Email'],
+                                                'PhoneNumber' => $row['PhoneNumber'],
+                                                'Images' => array() // Array to store images
+                                            );
+                                        }
+                                        // Add the image to the employee's images array
+                                        $employeeData[$employeeId]['Images'][] = $row['image'];
+                                    }
+                                    $a = 0;
+                                    foreach ($employeeData as $employee) {
+                                        $a = $a + 1;
+                                    }
                             ?>
-                                    <form id="myForm" action="edit.php" method="POST" enctype="multipart/form-data">
-                                        <input type="hidden" name="id" value='<?php echo $row["user_ID"]; ?>'>
+                                    <form id="myForm" action="edit.php?val=<?=$employee['UID']; ?>" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="id" value='<?=$employee['user_ID']; ?>'>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="firstName">firstName</label>
-                                            <input type="text" name="firstName" id="firstName" class="form-control form-control-lg" placeholder="Enter Your firstName" value='<?php echo $row["firstname"]; ?>' />
+                                            <input type="text" name="firstName" id="firstName" class="form-control form-control-lg" placeholder="Enter Your firstName" value='<?= $employee['Firstname']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">lastName</label>
-                                            <input type="text" id="typePasswordX-2" name="lastName" class="form-control form-control-lg" placeholder="Enter Your lastName" value='<?php echo $row["lastname"];  ?>' />
+                                            <input type="text" id="typePasswordX-2" name="lastName" class="form-control form-control-lg" placeholder="Enter Your lastName" value='<?= $employee['Lastname']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">salary</label>
-                                            <input type="text" id="salary" name="salary" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?php echo $row["salary"];  ?>' />
+                                            <input type="text" id="salary" name="salary" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?= $employee['Salary']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">Username</label>
-                                            <input type="text" id="salary" name="username" class="form-control form-control-lg" disabled value='<?php echo $row["Name"];  ?>' />
+                                            <input type="text" id="salary" name="username" class="form-control form-control-lg" disabled value='<?= $employee['Name']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">Email</label>
-                                            <input type="text" id="salary" name="Email" class="form-control form-control-lg" disabled value='<?php echo $row["Email"];  ?>' />
+                                            <input type="text" id="salary" name="Email" class="form-control form-control-lg" disabled value='<?= $employee['Email']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">PhoneNumber</label>
-                                            <input type="text" id="salary" name="number" class="form-control form-control-lg" placeholder="Enter Your Phone Number" value='<?php echo $row["PhoneNumber"];  ?>' />
+                                            <input type="text" id="salary" name="number" class="form-control form-control-lg" placeholder="Enter Your Phone Number" value='<?= $employee['PhoneNumber']; ?>' />
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">Image</label>
                                             <?php
-                                            $retrievedFileNames = explode(",", $row["picture"]);
-                                            foreach ($retrievedFileNames as $image) {
-                                                echo '<img src="./uploads/' . $image . '" style="width:100px;height:100px">';
+                                            $employeeImages = $employee['Images'];
+                                            foreach ($employeeImages as $image) {
+                                                $imagePath = explode(",", $image);
+                                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img" style="width:100px";>';
                                             }
                                             ?>
                                             <input type="file" id="image" name="image[]" class="form-control form-control-lg" multiple />
@@ -157,6 +190,61 @@ if ($result) {
             </div>
         </div>
     </section>
+    <!-- <?php
+            // if (isset($_POST['submit'])) {
+            //     $employee_id = $_POST['id'];
+            //     $firstName = $_POST['firstName'];
+            //     $lastName = $_POST['lastName'];
+            //     $salary = $_POST['salary'];
+            //     $phoneNumber = $_POST['number'];
+            //     $target_dir = "./uploads/";
+            //     // Check if new images were uploaded
+            //     if (!empty($_FILES['image']['name'][0])) {
+            //         // Loop through each uploaded file
+            //         $fileNames = array();
+            //         foreach ($_FILES['image']['name'] as $key => $name) {
+            //             $uniqueFileName = uniqid() . '_' . time() . $name; // Generate a unique file name
+            //             $target_file = $target_dir . basename($uniqueFileName);
+            //             $fileNames[] = $uniqueFileName;
+            //             if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+            //                 echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+            //             }
+            //         }
+            //         // Convert array of file names to a comma-separated string
+            //         $images = implode(',', $fileNames);
+            //         $image = $images;
+            //     } else {
+            //         // $sql_query = "SELECT image FROM employee_images WHERE user_ID = '$employee_id'";
+            //         // $squery = mysqli_query($conn, $sql_query);
+            //         // $rows = mysqli_fetch_array($squery);
+            //         $image = $employee['Images'];
+            //     }
+            //     // update details
+            //     $sql = "UPDATE employees
+            //     JOIN user ON employees.user_ID = user.ID
+            //     JOIN employee_images ON employees.user_ID = employee_images.user_ID
+            //     SET employees.firstname = '$firstName',
+            //         employees.lastname = '$lastName',
+            //         employees.salary = '$salary',
+            //         user.PhoneNumber = '$phoneNumber',
+            //         user.Email = '$email',
+            //         user.Name = '$name',
+            //         employee_images.image = '$image'
+            //     WHERE employees.user_ID = '$employee_id'";
+            //     $result = mysqli_query($conn, $sql);
+            //     session_start();
+            //     if ($result) {
+            //         header("location:employee_data.php");
+            //         $success = "Updated Successfully";
+            //         $_SESSION['msg'] = $success;
+            //     } else {
+            //         die(mysqli_error($conn));
+            //     }
+            // }
+
+
+
+            ?> -->
     <!-- script for validation -->
     <script>
         $.validator.addMethod("extension", function(value, element, param) {
