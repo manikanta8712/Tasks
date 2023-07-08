@@ -30,9 +30,9 @@
 //    }
 if (isset($_POST['deleteEm'])) {
     $employee_id = $_POST['delete_id'];
-    $query = "DELETE employees, employee_images
-    FROM employees
-    LEFT JOIN employee_images ON employees.user_ID = employee_images.user_ID
+    // echo $employee_id;
+    // exit;
+    $query = "DELETE employees, employee_images FROM employees  JOIN employee_images ON employees.user_ID = employee_images.user_ID
     WHERE employees.user_ID = '$employee_id'";
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
@@ -42,6 +42,5 @@ if (isset($_POST['deleteEm'])) {
                 $_SESSION['message'] = $deletemessage;
 
     }
-
 }
     ?>

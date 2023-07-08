@@ -1,16 +1,16 @@
 <?php
 // database connection
 include "connection.php";
+session_start();
 if (isset($_POST['submit'])) {
     $employee_id = $_POST['id'];
     $vall = $_GET['val'];
-    //echo $_vall;
     $firstName = $_POST['firstName'];
-   //echo $firstName;
     $lastName = $_POST['lastName'];
     $salary = $_POST['salary'];
     $phoneNumber = $_POST['number'];
     $target_dir = "./uploads/";
+
     // Check if new images were uploaded
     if (!empty($_FILES['image']['name'][0])) {
         // Loop through each uploaded file
@@ -25,29 +25,35 @@ if (isset($_POST['submit'])) {
         }
         // Convert array of file names to a comma-separated string
         $images = implode(',', $fileNames);
-        $image = $images;
+
+        // Delete previous images associated with the employee
+        $deleteSql = "DELETE FROM employee_images WHERE user_ID = '$vall'";
+        mysqli_query($conn, $deleteSql);
     } else {
-         $sql_query = "SELECT image FROM employee_images WHERE user_ID='$vall'";
-        //echo $employee_id;
-         $squery = mysqli_query($conn, $sql_query);
-         $rows = mysqli_fetch_assoc($squery);
-        $image = $rows['image'];
+        $images = "";
     }
-    // update details
+
+    // Update employee details
     $sql = "UPDATE employees
-    JOIN user ON employees.user_ID = user.ID
-    JOIN employee_images ON employees.user_ID = employee_images.user_ID
-    SET employees.firstname = '$firstName',
-        employees.lastname = '$lastName',
-        employees.salary = '$salary',
-        user.PhoneNumber = '$phoneNumber',
-        employee_images.image = '$image'
-    WHERE employees.user_ID = '$vall'";
+            JOIN user ON employees.user_ID = user.ID
+            SET employees.firstname = '$firstName',
+                employees.lastname = '$lastName',
+                employees.salary = '$salary',
+                user.PhoneNumber = '$phoneNumber'
+            WHERE employees.user_ID = '$vall'";
     $result = mysqli_query($conn, $sql);
-    session_start();
+    $username = $_SESSION['name'];
+    // Insert new images into a separate row
     if ($result) {
-    //echo $sql;
-        header("location:employee_data.php");
+        if (!empty($images)) {
+            $imageArray = explode(',', $images);
+            foreach ($imageArray as $image) {
+                $insertSql = "INSERT INTO employee_images (user_ID, image) VALUES ('$vall', '$image')";
+                mysqli_query($conn, $insertSql);
+            }
+        }
+        session_start();
+        header("location: employee_data.php");
         $success = "Updated Successfully";
         $_SESSION['msg'] = $success;
     } else {
@@ -164,13 +170,14 @@ if (isset($_POST['submit'])) {
                                         </div>
                                         <div class="form-outline mb-4">
                                             <label class="form-label d-flex" for="lastName">Image</label>
-                                            <?php
+                                                <?php
                                             $employeeImages = $employee['Images'];
-                                            foreach ($employeeImages as $image) {
+                                            $uniqueImages = array_unique($employeeImages); // Remove duplicates
+                                            foreach ($uniqueImages as $image) {
                                                 $imagePath = explode(",", $image);
-                                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img" style="width:100px";>';
+                                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img" style="width:100px;">';
                                             }
-                                            ?>
+                                                ?>
                                             <input type="file" id="image" name="image[]" class="form-control form-control-lg" multiple />
                                             <p>Accept jpeg,jpg,png,gif</p>
                                         </div>
