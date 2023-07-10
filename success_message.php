@@ -1,6 +1,262 @@
+<?php 
+session_start();
+ include "connection.php";
+ $id = $_SESSION['id'];
+ $query = "SELECT * FROM employees WHERE user_ID = '$id'";
+ $query_result = mysqli_query($conn,$query);
+ $rows = mysqli_num_rows($query_result);
+ if($rows>0){
+    //echo "hello";
+    ?>
+    <?php
+// database connection
+//include "connection.php";
+//session_start();
+if (isset($_POST['submit'])) {
+    $employee_id = $_POST['id'];
+    $vall = $_GET['val'];
+    $firstName = $_POST['firstName'];
+    $lastName = $_POST['lastName'];
+    $salary = $_POST['salary'];
+    $phoneNumber = $_POST['number'];
+    $target_dir = "./uploads/";
+
+    // Check if new images were uploaded
+    if (!empty($_FILES['image']['name'][0])) {
+        // Loop through each uploaded file
+        $fileNames = array();
+        foreach ($_FILES['image']['name'] as $key => $name) {
+            $uniqueFileName = uniqid() . '_' . time() . $name; // Generate a unique file name
+            $target_file = $target_dir . basename($uniqueFileName);
+            $fileNames[] = $uniqueFileName;
+            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+            }
+        }
+        // Convert array of file names to a comma-separated string
+        $images = implode(',', $fileNames);
+
+        // Delete previous images associated with the employee
+        $deleteSql = "DELETE FROM employee_images WHERE user_ID = '$vall'";
+        mysqli_query($conn, $deleteSql);
+    } else {
+        $images = "";
+    }
+
+    // Update employee details
+    $sql = "UPDATE employees
+            JOIN user ON employees.user_ID = user.ID
+            SET employees.firstname = '$firstName',
+                employees.lastname = '$lastName',
+                employees.salary = '$salary',
+                user.PhoneNumber = '$phoneNumber'
+            WHERE employees.user_ID = '$vall'";
+    $result = mysqli_query($conn, $sql);
+    $username = $_SESSION['name'];
+    // Insert new images into a separate row
+    if ($result) {
+        if (!empty($images)) {
+            $imageArray = explode(',', $images);
+            foreach ($imageArray as $image) {
+                $insertSql = "INSERT INTO employee_images (user_ID, image) VALUES ('$vall', '$image')";
+                mysqli_query($conn, $insertSql);
+            }
+        }
+        session_start();
+        header("location: employee_data.php");
+        $success = "Updated Successfully";
+        $_SESSION['msg'] = $success;
+    } else {
+        die(mysqli_error($conn));
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- Latest compiled and minified CSS -->
+    <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
+    <!-- Latest compiled JavaScript -->
+    <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jquery validation-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js"></script>
+    <style>
+        .text_change {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+            margin: 0px;
+            background: rgb(65, 202, 192);
+            border-radius: 13px 13px 0px 0px;
+            color: white;
+        }
+
+        .btn-block {
+            display: block;
+            width: auto;
+            background: rgb(65, 202, 192);
+            border-color: rgb(65, 202, 192);
+        }
+
+        .btn-block:hover {
+            background: rgb(65, 202, 192);
+            border-color: rgb(65, 202, 192);
+        }
+    </style>
+</head>
+
+<body>
+    <section class="">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+                    <div class="card shadow-2-strong" style="border-radius: 1rem;">
+                        <h3 class="text_change">Edit Details</h3>
+                        <div class="card-body p-5 text-center">
+                            <?php
+                            if (isset($_SESSION['id'])) {
+                                $employee_id = $_SESSION['id'];
+                                // $query = "SELECT * FROM employees WHERE UID='$employee_id' ";
+                                $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
+                                FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID WHERE employees.user_ID = '$employee_id'";
+                                $query_run = mysqli_query($conn, $query);
+                                if (mysqli_num_rows($query_run) > 0) {
+                                    $employeeData = array(); // Initialize the $employeeData array
+                                    while ($row = mysqli_fetch_assoc($query_run)) {
+                                        $employeeId = $row['user_ID'];
+                                        if (!isset($employeeData[$employeeId])) {
+                                            // Initialize the employee data
+                                            $employeeData[$employeeId] = array(
+                                                'UID' => $row['user_ID'],
+                                                'Name' => $row['Name'],
+                                                'Firstname' => $row['firstname'],
+                                                'Lastname' => $row['lastname'],
+                                                'Salary' => $row['salary'],
+                                                'Email' => $row['Email'],
+                                                'PhoneNumber' => $row['PhoneNumber'],
+                                                'Images' => array() // Array to store images
+                                            );
+                                        }
+                                        // Add the image to the employee's images array
+                                        $employeeData[$employeeId]['Images'][] = $row['image'];
+                                    }
+                                    $a = 0;
+                                    foreach ($employeeData as $employee) {
+                                        $a = $a + 1;
+                                    }
+                            ?>
+                                    <form id="myForm" action="edit.php?val=<?=$employee['UID']; ?>" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="id" value='<?=$employee['user_ID']; ?>'>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="firstName">firstName</label>
+                                            <input type="text" name="firstName" id="firstName" class="form-control form-control-lg" placeholder="Enter Your firstName" value='<?= $employee['Firstname']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">lastName</label>
+                                            <input type="text" id="typePasswordX-2" name="lastName" class="form-control form-control-lg" placeholder="Enter Your lastName" value='<?= $employee['Lastname']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">salary</label>
+                                            <input type="text" id="salary" name="salary" class="form-control form-control-lg" placeholder="Enter Your salary" value='<?= $employee['Salary']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">Username</label>
+                                            <input type="text" id="salary" name="username" class="form-control form-control-lg" disabled value='<?= $employee['Name']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">Email</label>
+                                            <input type="text" id="salary" name="Email" class="form-control form-control-lg" disabled value='<?= $employee['Email']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">PhoneNumber</label>
+                                            <input type="text" id="salary" name="number" class="form-control form-control-lg" placeholder="Enter Your Phone Number" value='<?= $employee['PhoneNumber']; ?>' />
+                                        </div>
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label d-flex" for="lastName">Image</label>
+                                                <?php
+                                            $employeeImages = $employee['Images'];
+                                            $uniqueImages = array_unique($employeeImages); // Remove duplicates
+                                            foreach ($uniqueImages as $image) {
+                                                $imagePath = explode(",", $image);
+                                                echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img" style="width:100px;">';
+                                            }
+                                                ?>
+                                            <input type="file" id="image" name="image[]" class="form-control form-control-lg" multiple />
+                                            <p>Accept jpeg,jpg,png,gif</p>
+                                        </div>
+                                        <div class="d-flex justify-content-center">
+                                            <button class="btn btn-primary btn-lg btn-block" name="submit" type="submit">SUBMIT</button>
+                                        </div>
+                                    </form>
+                            <?php
+                                } else {
+                                    echo "No such id found";
+                                }
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- script for validation -->
+    <script>
+        $.validator.addMethod("extension", function(value, element, param) {
+            param = typeof param === "string" ? param.replace(/,/g, "|") : "jpg|jpeg|gif|png";
+            return this.optional(element) || value.match(new RegExp(".(" + param + ")$", "i"));
+        }, "Please enter a valid image file.");
+
+        $("#myForm").validate({
+            rules: {
+                firstName: {
+                    required: true,
+                },
+                lastName: {
+                    required: true,
+                },
+                salary: {
+                    required: true,
+                },
+                image: {
+                    required: true,
+                    extension: "jpg|jpeg|gif|png",
+                },
+            },
+            messages: {
+                firstName: {
+                    required: "Please Enter firstName.",
+                },
+                lastName: {
+                    required: "Please Enter lastName.",
+                },
+                salary: {
+                    required: "Please enter your salary",
+                },
+                image: {
+                    required: "please upload image",
+                    extension: "please upload image jpg,jpeg,gif,png",
+                },
+            },
+        });
+    </script>
+
+</body>
+
+</html>
+    <?php
+ }
+ else{
+    ?>
+    <!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,16 +266,8 @@
     <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
     <script src="bootstrap-5.2.3-dist\js\bootstrap.min.js"></script>
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js"></script>
-    <!-- <style>
-        .container {
-            max-width: 400px;
-            /* margin: 0 auto;
-      margin-top: 100px; */
-        }
-    </style> -->
     <style>
         .text_change {
             display: flex;
@@ -48,22 +296,18 @@
 
 <body>
     <?php
-    include "connection.php";
-
-    session_start();
+   // session_start();
+    //include "connection.php";
     if (empty($_SESSION['name'])) {
         header('location:Login.php');
         exit();
     }
-
     $username = $_SESSION['name'];
-
     $sql = "SELECT Email  FROM user WHERE Name = '$username'";
     $result = $conn->query($sql);
     //print_r($result);
     //print_r($result->num_rows);
     //exit();
-
     if ($result->num_rows > 0) {
         // output data of each row
         $row = $result->fetch_assoc();
@@ -76,16 +320,80 @@
     } else {
         $email = "Email Not Found";
     }
-    // $conn->close();
-
     // if(empty($_SESSION['email'])){
     //     header('location:Login.php');
-
     // }
-
     // if (!empty($_SESSION['name'])) {
     //     $username = $_SESSION['name'];
     // }
+
+    $check_id =  $_SESSION['id'];
+
+    //multiple file upload
+    if (isset($_POST['firstName']) && isset($_POST['lastName']) && isset($_POST['salary']) && isset($_FILES['image']['name'])) {
+        $firstName = $_POST['firstName'];
+        $lastName = $_POST['lastName'];
+        $salary = $_POST['salary'];
+        $profilepics = $_FILES['image']['name'];
+        $getparentID = $conn->query("SELECT ID FROM user where Email='$email'");
+        while ($row = mysqli_fetch_assoc($getparentID)) {
+            $value1 = $row['ID'];
+            $_SESSION['id'] = $row['ID'];
+        }
+        // Loop through each uploaded file
+        
+        foreach ($_FILES['image']['name'] as $key => $name) {
+            $fileNames = array();
+            $target_dir = "./uploads/";
+            // echo $target_dir;
+            // exit;
+            $uniqueFileName = uniqid() . '_' .time(). $name; // Generate a unique file name
+            $target_file = $target_dir.basename($uniqueFileName);
+            // echo $target_file;
+            // exit;
+            $fileNames[] = $uniqueFileName;
+            // $target_dir = "uploads/";
+            //$target_file = $target_dir . $newFileName;
+            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
+                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
+                 // Convert array of file names to a comma-separated string
+        $images = implode(',', $fileNames);
+                // Start the transaction for each file
+                mysqli_begin_transaction($conn);
+                try {
+                    // Update the employeeImage table
+                    $username = $_SESSION['name'];
+                    $userData = "INSERT INTO employee_images (username,image, user_ID) " .
+                        "VALUES ('$username','$images', '$value1')";
+                    mysqli_query($conn, $userData);
+                    mysqli_commit($conn);
+                } catch (Exception $e) {
+                    // Rollback the transaction on error
+                    mysqli_rollback($conn);
+                    echo "Error updating data: " . $e->getMessage();
+                }
+            } else {
+                echo "";
+            }
+        }
+        // Start the transaction for the employee table
+        mysqli_begin_transaction($conn);
+        try {
+            // insert the employee table
+            $data = "INSERT INTO employees (firstname, lastname, salary, user_ID) " .
+                "VALUES ('$firstName', '$lastName', $salary, '$value1')";
+            mysqli_query($conn, $data);
+            mysqli_commit($conn);
+           // $_SESSION['status'] = 'Data Inserted Successfully';
+            // header('Location: employee_data.php');
+        } catch (Exception $e) {
+            // Rollback the transaction on error
+            mysqli_rollback($conn);
+            echo "Error updating data: " . $e->getMessage();
+        }
+        // Close the database connection
+    mysqli_close($conn);
+    }
     ?>
     <div class="container">
         <span>Hello <?php
@@ -99,31 +407,8 @@
             <a href="page3.php">page3</a>
         </div>
         <h1>This is welcome Page</h1>
-        <!-- <h2 class="text-center">Login</h2>
-        <form id="myForm" method="post" action="success_message.php">
-            <div class="form-group">
-                <label for="firstName">First Name</label>
-                <input type="text" class="form-control" id="firstName" name="firstName" placeholder="Enter your first name">
             </div>
-            <div class="form-group">
-                <label for="lastName">Last Name</label>
-                <input type="text" class="form-control" id="lastName" name="lastName" placeholder="Enter your last name">
             </div>
-            <div class="form-group">
-                <label for="salary">Salary</label>
-                <input type="text" class="form-control" id="salary" name="salary" placeholder="Enter your salary">
-            </div>
-            <div class="form-group mt-2 mb-2">
-                <label for="image">Image</label>
-                <input type="file" class="form-control-file" id="imageUpload" name="image">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Submit</button>
-        </form> -->
-    </div>
-    <!-- <//?php if (isset($_POST['image']) && isset($_POST['firstName'])) {
-        $img = $_POST['image'];
-        echo $img;
-    } ?> -->
     <section class="">
         <div class="container py-5 h-100">
             <div class="row d-flex justify-content-center align-items-center h-100">
@@ -162,131 +447,6 @@
             </div>
         </div>
     </section>
-    <?php
-    include "connection.php";
-
-    // $sql2 = "CREATE TABLE employee(
-    //         Emp_ID INT Auto_increment,
-    //         firstname VARCHAR(30) NOT NULL,
-    //         lastname VARCHAR(30) NOT NULL,
-    //         salary DECIMAL(10,2),
-    //         picture VARCHAR(255),
-    //         foreign key(Emp_ID) references user(ID),
-    // )";
-    // $sql2 = "CREATE TABLE employees(
-    //     UID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    //     firstname VARCHAR(30) NOT NULL,
-    //     lastname VARCHAR(30) NOT NULL,
-    //     salary FLOAT(10,2),
-    //     picture VARCHAR(255),
-    //     user_ID INT NOT NULL,
-    //     foreign key(user_ID) references user(ID)
-    // )";
-    // if ($conn->query($sql2) === TRUE) {
-    //     echo "Table employee created successfully";
-    // } else {
-    //     echo "Error creating table: " . $conn->error;
-    // }
-
-    // single file upload
-
-    // if (isset($_POST['firstName']) && isset($_POST['lastName']) && isset($_POST['salary']) && isset($_FILES['image']['name'])) {
-    //     $firstName = $_POST['firstName'];
-    //     $lastName = $_POST['lastName'];
-    //     $salary = $_POST['salary'];
-    //     $img = $_FILES['image']['name'];
-    //     $target_dir = "./uploads/";
-    //     $target_file = $target_dir . basename($_FILES['image']['name']);
-
-    //     if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-    //         echo "The file " . basename($_FILES["image"]["name"]) . " has been uploaded.";
-    //     }
-    //     $image = $_FILES["image"]["name"]; // used to store the filename in a variable
-    //     $getparentID = $conn->query("SELECT ID FROM user where Email='$email'");
-    //     while($row=mysqli_fetch_assoc($getparentID)){
-
-    //     $value1=$row['ID'];
-
-    //     //$_SESSION['id'] = $row['ID'];
-
-    // }
-    //     $data = "INSERT INTO employees (firstname, lastname, salary,picture,user_ID)
-    // VALUES ('$firstName', '$lastName', '$salary','$image','$value1')";
-
-    //     if ($conn->query($data) === TRUE) {
-    //         echo "New record created successfully";
-    //     } else {
-    //         echo "Error: " . $data . "<br>" . $conn->error;
-    //     }
-    // }
-
-    //multiple file upload
-    if (isset($_POST['firstName']) && isset($_POST['lastName']) && isset($_POST['salary']) && isset($_FILES['image']['name'])) {
-        $firstName = $_POST['firstName'];
-        $lastName = $_POST['lastName'];
-        $salary = $_POST['salary'];
-        $profilepics = $_FILES['image']['name'];
-        $getparentID = $conn->query("SELECT ID FROM user where Email='$email'");
-        while ($row = mysqli_fetch_assoc($getparentID)) {
-            $value1 = $row['ID'];
-            $_SESSION['id'] = $row['ID'];
-        }
-        // Loop through each uploaded file
-        
-        foreach ($_FILES['image']['name'] as $key => $name) {
-            $fileNames = array();
-            $target_dir = "./uploads/";
-            // echo $target_dir;
-            // exit;
-            $uniqueFileName = uniqid() . '_' .time(). $name; // Generate a unique file name
-            $target_file = $target_dir.basename($uniqueFileName);
-            // echo $target_file;
-            // exit;
-            $fileNames[] = $uniqueFileName;
-            // $target_dir = "uploads/";
-            //$target_file = $target_dir . $newFileName;
-            if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-                echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
-                 // Convert array of file names to a comma-separated string
-        $images = implode(',', $fileNames);
-                // Start the transaction for each file
-                mysqli_begin_transaction($conn);
-                try {
-                    // Update the employeeImage table
-                    $username = $_SESSION['name'];
-                    $userData = "INSERT INTO employee_images (username,image, user_ID) " .
-                        "VALUES ('$username',' $images', '$value1')";
-                    mysqli_query($conn, $userData);
-                    mysqli_commit($conn);
-                } catch (Exception $e) {
-                    // Rollback the transaction on error
-                    mysqli_rollback($conn);
-                    echo "Error updating data: " . $e->getMessage();
-                }
-            } else {
-                echo "";
-            }
-        }
-        // Start the transaction for the employee table
-        mysqli_begin_transaction($conn);
-        try {
-            // insert the employee table
-            $data = "INSERT INTO employees (firstname, lastname, salary, user_ID) " .
-                "VALUES ('$firstName', '$lastName', $salary, '$value1')";
-            mysqli_query($conn, $data);
-            mysqli_commit($conn);
-           // $_SESSION['status'] = 'Data Inserted Successfully';
-            // header('Location: employee_data.php');
-        } catch (Exception $e) {
-            // Rollback the transaction on error
-            mysqli_rollback($conn);
-            echo "Error updating data: " . $e->getMessage();
-        }
-        // Close the database connection
-    mysqli_close($conn);
-    }
-    
-    ?>
     <script>
         $.validator.addMethod("extension", function(value, element, param) {
             param = typeof param === "string" ? param.replace(/,/g, "|") : "jpg|jpeg|gif|png";
@@ -337,8 +497,8 @@
             }
         });
     </script>
-
-
 </body>
-
 </html>
+    <?php
+ }
+?>

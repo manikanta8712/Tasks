@@ -95,7 +95,7 @@ if (isset($_POST['Email']) && isset($_POST['Password'])) {
     $email = $_POST['Email'];
     $password = $_POST['Password'];
     $hashedPlaintextPassword = md5($password);
-    $sql = "SELECT Email, Password, Name FROM user";
+    $sql = "SELECT Email,ID, Password, Name FROM user";
     $result = $conn->query($sql);
     if ($result->num_rows > 0) {
         $emailMatched = false;
@@ -112,9 +112,10 @@ if (isset($_POST['Email']) && isset($_POST['Password'])) {
                     $passwordMatched = true;
 
                     $name = $row["Name"];
+                    $id = $row["ID"];
                     //$_SESSION['email'] = $emailFromDB;
                     $_SESSION['name'] = $name;
-
+                    $_SESSION['id'] = $id;
                     header('location: success_message.php');
 
                     exit;
@@ -176,8 +177,11 @@ if (isset($_POST['Email']) && isset($_POST['Password'])) {
                                         echo $show_error;
                                     } ?></p>
                             </form>
+                            <div>
+                                <p>Don't have an account?</p>
+                                <a type="button" class="button text-decoration-none" href="Signup.php">Sign Up</a>
+                            </div>
                             <hr class="my-4">
-
                         </div>
                     </div>
                 </div>
@@ -185,5 +189,4 @@ if (isset($_POST['Email']) && isset($_POST['Password'])) {
         </div>
     </section>
 </body>
-
 </html>

@@ -236,6 +236,6 @@ if ($admin == 1) {
     </html>
 <?php
 } else {
-    echo "you don't have access";
+    echo "<h2 class='text-center'>you don't have access</h2>";
 }
 ?>

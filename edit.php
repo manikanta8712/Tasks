@@ -197,61 +197,6 @@ if (isset($_POST['submit'])) {
             </div>
         </div>
     </section>
-    <!-- <?php
-            // if (isset($_POST['submit'])) {
-            //     $employee_id = $_POST['id'];
-            //     $firstName = $_POST['firstName'];
-            //     $lastName = $_POST['lastName'];
-            //     $salary = $_POST['salary'];
-            //     $phoneNumber = $_POST['number'];
-            //     $target_dir = "./uploads/";
-            //     // Check if new images were uploaded
-            //     if (!empty($_FILES['image']['name'][0])) {
-            //         // Loop through each uploaded file
-            //         $fileNames = array();
-            //         foreach ($_FILES['image']['name'] as $key => $name) {
-            //             $uniqueFileName = uniqid() . '_' . time() . $name; // Generate a unique file name
-            //             $target_file = $target_dir . basename($uniqueFileName);
-            //             $fileNames[] = $uniqueFileName;
-            //             if (move_uploaded_file($_FILES['image']['tmp_name'][$key], $target_file)) {
-            //                 echo "The file " . basename($name) . " has been uploaded as " . basename($uniqueFileName) . ".";
-            //             }
-            //         }
-            //         // Convert array of file names to a comma-separated string
-            //         $images = implode(',', $fileNames);
-            //         $image = $images;
-            //     } else {
-            //         // $sql_query = "SELECT image FROM employee_images WHERE user_ID = '$employee_id'";
-            //         // $squery = mysqli_query($conn, $sql_query);
-            //         // $rows = mysqli_fetch_array($squery);
-            //         $image = $employee['Images'];
-            //     }
-            //     // update details
-            //     $sql = "UPDATE employees
-            //     JOIN user ON employees.user_ID = user.ID
-            //     JOIN employee_images ON employees.user_ID = employee_images.user_ID
-            //     SET employees.firstname = '$firstName',
-            //         employees.lastname = '$lastName',
-            //         employees.salary = '$salary',
-            //         user.PhoneNumber = '$phoneNumber',
-            //         user.Email = '$email',
-            //         user.Name = '$name',
-            //         employee_images.image = '$image'
-            //     WHERE employees.user_ID = '$employee_id'";
-            //     $result = mysqli_query($conn, $sql);
-            //     session_start();
-            //     if ($result) {
-            //         header("location:employee_data.php");
-            //         $success = "Updated Successfully";
-            //         $_SESSION['msg'] = $success;
-            //     } else {
-            //         die(mysqli_error($conn));
-            //     }
-            // }
-
-
-
-            ?> -->
     <!-- script for validation -->
     <script>
         $.validator.addMethod("extension", function(value, element, param) {
