@@ -2,6 +2,11 @@
 // database connection
 include "connection.php";
 session_start();
+$id = $_SESSION['id'];
+$que ="SELECT admin FROM user WHERE ID='$id'";
+$result = $conn->query($que);
+$row = $result->fetch_assoc();
+$admin = $row["admin"];
 if (isset($_POST['submit'])) {
     $employee_id = $_POST['id'];
     $vall = $_GET['val'];
@@ -32,7 +37,10 @@ if (isset($_POST['submit'])) {
     } else {
         $images = "";
     }
-
+    $query = "SELECT * FROM employees WHERE user_ID = '$id'";
+ $query_result = mysqli_query($conn,$query);
+ $rows = mysqli_num_rows($query_result);
+ if($rows>0){
     // Update employee details
     $sql = "UPDATE employees
             JOIN user ON employees.user_ID = user.ID
@@ -41,6 +49,10 @@ if (isset($_POST['submit'])) {
                 employees.salary = '$salary',
                 user.PhoneNumber = '$phoneNumber'
             WHERE employees.user_ID = '$vall'";
+ }
+ else{
+    header("Location:success_message.php");
+ }
     $result = mysqli_query($conn, $sql);
     $username = $_SESSION['name'];
     // Insert new images into a separate row
@@ -111,7 +123,7 @@ if (isset($_POST['submit'])) {
                         <h3 class="text_change">Edit Details</h3>
                         <div class="card-body p-5 text-center">
                             <?php
-                            if (isset($_GET['updateid'])) {
+                            if (isset($_GET['updateid']) && ($id == $_GET['updateid']) || $admin == 1) {
                                 $employee_id = $_GET['updateid'];
                                 // $query = "SELECT * FROM employees WHERE UID='$employee_id' ";
                                 $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
@@ -182,13 +194,17 @@ if (isset($_POST['submit'])) {
                                             <p>Accept jpeg,jpg,png,gif</p>
                                         </div>
                                         <div class="d-flex justify-content-center">
-                                            <button class="btn btn-primary btn-lg btn-block" name="submit" type="submit">SUBMIT</button>
+                                            <button class="btn btn-primary btn-lg btn-block" name="submit" type="submit">Update</button>
                                         </div>
                                     </form>
                             <?php
                                 } else {
-                                    echo "No such id found";
+                                    // echo "No such id found";
+                                    header("Location:success_message.php");
                                 }
+                            }
+                            else{
+                                echo "<h1>you don't have access</h1>";
                             }
                             ?>
                         </div>

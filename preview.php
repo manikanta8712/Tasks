@@ -4,28 +4,37 @@ include "connection.php";
 if (isset($_GET['previewid'])) {
     $employee_id = $_GET['previewid'];
     //$query = "SELECT * FROM employees WHERE UID ='$employee_id'";
+    $queryy = "SELECT * FROM employees WHERE user_ID = '$employee_id'";
+ $query_result = mysqli_query($conn,$queryy);
+ $rows = mysqli_num_rows($query_result);
+ if($rows>0){
     $query = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image 
     FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID WHERE employees.user_ID = '$employee_id'";
-    $query_run = mysqli_query($conn, $query);
+ }else{
+    $query = "SELECT *  FROM user WHERE ID = '$employee_id'";
+ }
+ $query_run = mysqli_query($conn, $query);
     if (mysqli_num_rows($query_run) > 0) {
         $employeeData = array(); // Initialize the $employeeData array
         while ($row = mysqli_fetch_assoc($query_run)) {
-            $employeeId = $row['user_ID'];
+            $employeeId = !empty($row['user_ID'])?$row['user_ID']:'';
             if (!isset($employeeData[$employeeId])) {
                 // Initialize the employee data
                 $employeeData[$employeeId] = array(
-                    'UID' => $row['user_ID'],
-                    'Name' => $row['Name'],
-                    'Firstname' => $row['firstname'],
-                    'Lastname' => $row['lastname'],
-                    'Salary' => $row['salary'],
+                    'UID' => !empty($row['user_ID'])?$row['user_ID']:'',
+                    'Name' => !empty($row['Name'])?$row['Name']:'',
+                    'Firstname' => !empty($row['firstname'])?$row['firstname']:'',
+                    'Lastname' =>!empty( $row['lastname'])?$row['lastname']:'',
+                    'Salary' =>!empty( $row['salary'])?$row['salary']:'',
                     'Email' => $row['Email'],
                     'PhoneNumber' => $row['PhoneNumber'],
                     'Images' => array() // Array to store images
                 );
             }
             // Add the image to the employee's images array
-            $employeeData[$employeeId]['Images'][] = $row['image'];
+            if (!empty($row['image'])) {
+                $employeeData[$employeeId]['Images'][] = $row['image'];
+            }
         }
         $a = 0;
         foreach ($employeeData as $employee) {

@@ -2,23 +2,37 @@
 session_start();
 // Check if user is logged in
 include "connection.php";
-if (!empty($_SESSION['name'])) {
-    $username = $_SESSION['name'];
-}
-$query_sql = "SELECT admin FROM user WHERE Name = '$username'";
-$result = $conn->query($query_sql);
-$row = $result->fetch_assoc();
-$admin = $row["admin"];
-//echo $admin;
-// echo $username;
-// if (empty($_SESSION['name'])) {
-//     header('location:Login.php');
-//     exit();
-// }
-// Check if user is an admin
-if ($admin == 1) {
-    // Redirect to a different page or display an error message
-    // header('Location:employee_data.php');
+if (!empty($_SESSION['id'])) {
+    $id = $_SESSION['id'];
+    // echo $id;
+    $query = "SELECT * FROM employees WHERE user_ID = '$id'";
+    $query_result = mysqli_query($conn, $query);
+    $rows = mysqli_num_rows($query_result);
+    if ($rows > 0) {
+        $query_sql = "SELECT * FROM employees 
+                  INNER JOIN user ON employees.user_ID = user.ID
+                  INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID
+                  WHERE user.ID = '$id'";
+    } else {
+        $query_sql = "SELECT *  FROM user WHERE ID = '$id'";
+    }
+    $result = $conn->query($query_sql);
+    $employee = $result->fetch_assoc();
+
+
+    $employeeImages = !empty($employee['image']) ? explode(",", $employee['image']) : array(); // Convert the image string to an array
+    // Remove empty elements from the image array
+    $employeeImages = array_filter($employeeImages, function ($value) {
+        return !empty($value);
+    });
+    $lastImageIndex = count($employeeImages) - 1;
+    $isAdmin = $employee['admin'];
+    if (!empty($employee['user_ID'])) {
+        $_SESSION['uid'] = $employee['user_ID'];
+    }
+    if (!empty($employee['user_ID'])) {
+        $userId = $employee['user_ID']; // Get the user ID
+    }
 ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -26,7 +40,7 @@ if ($admin == 1) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CRUD</title>
+        <title>Employee Details</title>
         <!-- Latest compiled and minified CSS -->
         <link href="bootstrap-5.2.3-dist\css\bootstrap.min.css" rel="stylesheet">
         <!-- Latest compiled JavaScript -->
@@ -40,7 +54,6 @@ if ($admin == 1) {
     </head>
 
     <body>
-        <!-- modal for delete all -->
         <div class="modal fade" id="alldeleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -87,20 +100,19 @@ if ($admin == 1) {
             $success =  $_SESSION['msg'];
             unset($_SESSION['msg']); // Clear the message to prevent it from showing again
             echo '<div class="alert alert-success alert-dismissible fade show" role="alert">' .  $success . '
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>';
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>';
         }
         if (isset($_SESSION['message'])) {
             $deletemessage = $_SESSION['message'];
             unset($_SESSION['message']); // Clear the message to prevent it from showing again
             echo '<div class="alert alert-warning alert-dismissible fade show" role="alert">' . $deletemessage . '
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>';
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>';
         }
         ?>
         <div class="">
             <h1 class="text-center">Employee Details</h1>
-            <!-- search -->
             <form action="employee_data.php" method="GET">
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" name="search" value="<?php if (isset($_GET['search'])) {
@@ -110,132 +122,208 @@ if ($admin == 1) {
                     <button type="button" class="btn btn-danger mx-2" onclick="window.location.href = 'employee_data.php';">Cancel</button>
                 </div>
             </form>
-            <!-- delete all -->
-            <!-- <form id="confirmForm" action="delete_all.php" method="POST">
-            <input type="hidden" name="confirm" value="yes"> -->
             <table class="table table-primary">
-                <tr>
-                    <th>
-                        <button type="submit" name="del_multiple_data" class="btn btn-danger all_Delete">Delete</button>
-                    </th>
-                    <th>ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Salary</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Phone Number</th>
-                    <th>Picture</th>
-                    <th>
-                        Actions
-                        <a class="btn btn-danger" type="button" href="Login.php">Log Out</a>
-                    </th>
-                </tr>
-                <?php
-                // Database connection
-               // include "connection.php";
-                // SQL query to retrieve employee data
-                $sql = "SELECT employees.*, user.Email, user.Name, user.PhoneNumber, employee_images.image
-        FROM employees INNER JOIN user ON employees.user_ID = user.ID INNER JOIN employee_images ON employees.user_ID = employee_images.user_ID";
+                <thead>
+                    <tr>
+                        <th>
+                            <?php if ($isAdmin) { ?>
+                                <button type="submit" name="delete_multi_employees" class="btn btn-light btn-sm all_Delete">Delete</button>
+                            <?php } ?>
+                        </th>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Salary</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Phone Number</th>
+                        <th>Picture</th>
+                        <?php if (!$isAdmin || $userId == $employee['user_ID']) { ?>
+                            <th>Actions</th>
+                        <?php } ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <?php if ($isAdmin && $userId != $employee['user_ID']) { ?>
+                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?= $employee['user_ID'] ?>">
+                            <?php } ?>
+                        </td>
 
-                // Check if search parameter is set
-                if (isset($_GET['search'])) {
-                    $search_val = $_GET['search'];
-                    $sql .= " WHERE CONCAT(employees.UID, employees.firstname, employees.lastname, user.Email, user.PhoneNumber, user.Name, employee_images.image) LIKE '%$search_val%'";
-                }
-                $result = mysqli_query($conn, $sql);
-                if (mysqli_num_rows($result) > 0) {
-                    $employeeData = array(); // Array to store employee data
-                    foreach ($result as $row) {
-                        $employeeId = $row['UID'];
-                        if (!isset($employeeData[$employeeId])) {
-                            // Initialize the employee data
-                            $employeeData[$employeeId] = array(
-                                'UID' => $row['UID'],
-                                'user_ID' => $row['user_ID'],
-                                'Name' => $row['Name'],
-                                'Firstname' => $row['firstname'],
-                                'Lastname' => $row['lastname'],
-                                'Salary' => $row['salary'],
-                                'Email' => $row['Email'],
-                                'PhoneNumber' => $row['PhoneNumber'],
-                                'Images' => array() // Array to store images
-                            );
-                        }
-                        // Add the image to the employee's images array
-                        $employeeData[$employeeId]['Images'][] = $row['image'];
-                    }
-                    $a = 0;
-                    foreach ($employeeData as $employee) {
-                        $a++;
-                ?>
-                        <tr>
-                            <td>
-                                <input class="form-check-input checkall" name="del_chk[]" type="checkbox" value="<?= $employee['user_ID']; ?>">
-                            </td>
-                            <td class="empid" style="display: none;"><?= $employee['user_ID']; ?></td>
-                            <td class=""><?= $employee['UID']; ?></td>
-                            <td><?= $employee['Firstname']; ?></td>
-                            <td><?= $employee['Lastname']; ?></td>
-                            <td><?= $employee['Salary']; ?></td>
-                            <td><?= $employee['Name']; ?></td>
-                            <td><?= $employee['Email']; ?></td>
-                            <td><?= $employee['PhoneNumber']; ?></td>
-                            <td>
-                                <?php
-                                $lastImageIndex = count($employee['Images']) - 1;
-                                $imagePath = explode(",", $employee['Images'][$lastImageIndex]);
+
+                        <td><?= !empty($employee['UID']) ? $employee['UID'] : ''; ?></td>
+                        <td><?= !empty($employee['firstname']) ? $employee['firstname'] : ''; ?></td>
+                        <td><?= !empty($employee['lastname']) ? $employee['lastname'] : ''; ?></td>
+                        <td><?= !empty($employee['salary']) ? $employee['salary'] : ''; ?></td>
+                        <!-- <td><//?= $employee['firstname']; ?></td>
+                        <td><//?= $employee['lastname']; ?></td>
+                        <td><//?= $employee['salary']; ?></td> -->
+                        <td><?= $employee['Name']; ?></td>
+                        <td><?= $employee['Email']; ?></td>
+                        <td><?= $employee['PhoneNumber']; ?></td>
+                        <td>
+                            <?php
+                            if (!empty($employeeImages[$lastImageIndex])) {
+                                $imagePath = explode(",", $employeeImages[$lastImageIndex]);
                                 echo '<img src="./uploads/' . ltrim($imagePath[0]) . '" class="img">';
-                                ?>
-                            </td>
+                            }
+                            ?>
+                        </td>
+
+
+                        <?php if ($isAdmin || (!empty($userId) == !empty($employee['user_ID']))) { ?>
                             <td>
-                                <a class="btn btn-warning" href='preview.php?previewid=<?= $employee['user_ID']; ?>'>Preview</a>
-                                <a class="btn btn-primary" href='edit.php?updateid=<?= $employee['user_ID']; ?>'>Edit</a>
-                                <a class="btn btn-danger delete" href='delete.php?deleteid=<?= $employee['user_ID']; ?>'>Delete</a>
+                                <a class="btn btn-primary" href='edit.php?updateid=<?= !empty($employee['user_ID']) ? $employee['user_ID'] : $employee['ID']; ?>'>Update Details</a>
+                                <a class="btn btn-warning" href='preview.php?previewid=<?= !empty($employee['user_ID']) ? $employee['user_ID'] : $employee['ID']; ?>'>Preview</a>
+                                <?php if (!empty($userId) == !empty($employee['user_ID'])) { ?>
+                                    <a class="btn btn-primary" href='Login.php'>Log Out</a>
+                                <?php } ?>
                             </td>
-                        </tr>
-                <?php
+                        <?php } ?>
+                    </tr>
+                    <?php
+                    $employeesQuery = "SELECT temp.user_ID, temp.UID, temp.firstname, temp.lastname, temp.salary, temp.Email, temp.Name, temp.admin, temp.PhoneNumber, GROUP_CONCAT(temp.image) AS images
+                                    FROM (
+                                        SELECT DISTINCT employees.user_ID, employees.UID, employees.firstname, employees.lastname, employees.salary, user.Email, user.Name, user.admin, user.PhoneNumber, employee_images.image
+                                        FROM employees
+                                        INNER JOIN user ON employees.user_ID = user.ID
+                                        INNER JOIN employee_images ON user.ID = employee_images.user_ID  WHERE user.ID != '$id'
+                                        ORDER BY employees.UID
+                                    ) AS temp";
+                    // 
+                    if (isset($_GET['search'])) {
+                        $search_val = $_GET['search'];
+                        $employeesQuery .= " WHERE CONCAT(temp.UID, temp.firstname, temp.lastname) LIKE '%$search_val%' OR temp.Email LIKE '%$search_val%' OR temp.Name LIKE '%$search_val%' OR temp.PhoneNumber LIKE '%$search_val%'";
                     }
-                } else {
-                    echo "<h5>No record found</h5>";
-                }
-                ?>
+                    $employeesQuery .= " GROUP BY temp.user_ID, temp.UID, temp.firstname, temp.lastname, temp.salary, temp.Email, temp.Name, temp.admin, temp.PhoneNumber";
+                    // Execute the query
+                    //$ress = mysqli_query($conn, $employeesQuery);
+                    $employeesResult = $conn->query($employeesQuery);
+                    if ($employeesResult->num_rows > 0) {
+                        while ($row = $employeesResult->fetch_assoc()) {
+                            echo "<tr>";
+                            echo "<td>";
+                            if ($isAdmin && !$row['admin']) {
+                                echo "<input class='form-check-input checkall' name='del_chk[]' type='checkbox' value='" . $row['user_ID'] . "'>";
+                            }
+                            echo "</td>";
+                            echo "<td class='empid' style='display: none;'>" . $row['user_ID'] . "</td>";
+                            echo "<td>" . $row['UID'] . "</td>";
+                            echo "<td>" . $row['firstname'] . "</td>";
+                            echo "<td>" . $row['lastname'] . "</td>";
+                            echo "<td>" . $row['salary'] . "</td>";
+                            echo "<td>" . $row['Name'] . "</td>";
+                            echo "<td>" . $row['Email'] . "</td>";
+                            echo "<td>" . $row['PhoneNumber'] . "</td>";
+                            echo "<td>";
+                            foreach (explode(",", $row['images']) as $image) {
+                                echo '<img src="./uploads/' . $image . '" width="100px" height="100px" style="margin-right: 10px;">';
+                                break; // Break the loop after displaying the first image
+                            }
+                            echo "</td>";
+
+                            if (!$isAdmin) {
+                                echo "<td>
+                                <a class='btn btn-warning' href='preview.php?previewid=" . $row['user_ID'] . "'>Preview</a>
+                                </td>";
+                            }
+                            if ($isAdmin) {
+                                if ($row['admin']) {
+                                    echo "<td>
+                                <span>Admin</span>
+                                <a class='btn btn-warning' href='preview.php?previewid=" . $row['user_ID'] . "'>Preview</a>
+                                <input class='form-check-input admin' checked name='option' type='checkbox' value=" . $row['user_ID'] . " id='admin' data-ids=" . $row['user_ID'] . ">
+                                <label class='form-check-label' for='admin'>change to Admin</label>
+                                </td>";
+                                } else {
+                                    echo "<td>
+                                     <a class='btn btn-warning' href='preview.php?previewid=" . $row['user_ID'] . "'>Preview</a>
+                                     <a class='btn btn-primary' href='edit.php?updateid=" . $row['user_ID'] . "'>Edit</a>
+                                     <a class='btn btn-danger delete' href='delete.php?deleteid=" . $row['user_ID'] . "'>Delete</a>
+                                            <input class='form-check-input admin' name='option' type='checkbox' value=" . $row['user_ID'] . " id='admin' data-ids=" . $row['user_ID'] . ">
+                                            <label class='form-check-label' for='admin'>change to Admin</label>
+                                     </td>";
+                                }
+                            }
+                            echo "</tr>";
+                        }
+                    }
+                    // else {
+                    //     echo "<tr><td colspan='9'>No employees found.</td></tr>";
+                    // }
+                    ?>
+                </tbody>
             </table>
-            <!-- </form> -->
-        </div>
-        <script>
-            // modal for delete all
-            $(document).ready(function() {
-                $('.all_Delete').click(function(e) {
-                    e.preventDefault();
-                    var emp_ids = [];
-                    $(this).closest('table').find('.checkall:checked').each(function() {
-                        var emp_id = $(this).val();
-                        emp_ids.push(emp_id);
+            <script>
+                // modal for delete all
+                $(document).ready(function() {
+                    $('.all_Delete').click(function(e) {
+                        e.preventDefault();
+                        var emp_ids = [];
+                        $(this).closest('table').find('.checkall:checked').each(function() {
+                            var emp_id = $(this).val();
+                            emp_ids.push(emp_id);
+                        });
+                        console.log(emp_ids);
+                        $('#alldelete_id').val(emp_ids.join(', '));
+                        $('#alldeleteModal').modal('show');
                     });
-                    //console.log(emp_ids);
-                    $('#alldelete_id').val(emp_ids.join(', '));
-                    $('#alldeleteModal').modal('show');
+                    $('.cancelbtn').click(function(e) {
+                        e.preventDefault();
+                        location.reload();
+                    });
                 });
-                $('.cancelbtn').click(function(e) {
+                // delete function
+                $('.delete').click(function(e) {
                     e.preventDefault();
-                    location.reload();
+                    var emp_id = $(this).closest('tr').find('.empid').text();
+                    console.log(emp_id);
+                    $('#delete_id').val(emp_id);
+                    $('#deleteModal').modal('show');
                 });
-            });
-            // delte function
-            $('.delete').click(function(e) {
-                e.preventDefault();
-                var emp_id = $(this).closest('tr').find('.empid').text();
-                //console.log(emp_id);
-                $('#delete_id').val(emp_id);
-                $('#deleteModal').modal('show');
-            });
-        </script>
+                $('.admin').on('change', function() {
+                    var selectedadminValues = [];
+                    // Loop through all the checkboxes
+                    $('.admin').each(function() {
+                        var adminValue = $(this).is(':checked') ? 1 : 0;
+                        var checkboxValue = $(this).val();
+                        //alert(checkboxValue);
+                        // Only add to selectedadminValues if the checkbox is checked or the admin value is 1
+                        if (adminValue === 1 || adminValue === 0) {
+                            selectedadminValues.push({
+                                id: checkboxValue,
+                                admin: adminValue
+                            });
+                        }
+                    });
+                    // Make an AJAX request to the PHP script
+                    $.ajax({
+                        url: 'update_admin.php',
+                        method: 'POST',
+                        data: {
+                            selectedadminValues: selectedadminValues
+                        },
+                        success: function(response) {
+                            // Handle the response from the server if needed
+                            console.log(response);
+                            location.reload();
+
+                        },
+                        error: function(xhr, status, error) {
+                            // Handle errors if any
+                            console.log(error);
+                        }
+                    });
+                });
+            </script>
     </body>
 
     </html>
 <?php
 } else {
-    echo "<h2 class='text-center'>you don't have access</h2>";
+    echo "<h2 class='text-center'>You are not logged in</h2>
+        <a href='Login.php' type='button' class='btn btn-primary'>Log In</a>
+    ";
 }
 ?>
